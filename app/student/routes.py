@@ -8,7 +8,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from app import db
-from app.models import Activities, Attempts, StudentProfiles, Modules, GroupMembers, ModuleAssignments, GameSettings
+from app.models import Activities, Attempts, StudentProfile, Modules, GroupMembers, ModuleAssignments, GameSettings
 import json
 
 from flask import (
