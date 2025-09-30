@@ -188,7 +188,7 @@ group_students = db.Table(
     db.UniqueConstraint("group_id", "student_id", name="uq_group_student")
 )
 
-class StudentProfiles(db.Model):
+class StudentProfile(db.Model):
     __tablename__ = "student_profiles"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
@@ -207,7 +207,7 @@ class StudentProfiles(db.Model):
 
 # Relación 1–1 desde Users (si no la tienes ya)
 Users.profile = db.relationship(
-    "StudentProfiles",
+    "StudentProfile",
     uselist=False,
     backref="user",
     cascade="all, delete-orphan"
