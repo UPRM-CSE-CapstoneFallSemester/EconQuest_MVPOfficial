@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  :root{ --sbw-tea:260px; }
+  #tea-root{ min-height: calc(100vh - 64px); }
+  #tea-sidebar{ width: var(--sbw-tea); background: linear-gradient(180deg,#0b1222,#0a1426 55%,#0b1728); border-right: 1px solid rgba(148,163,184,.12); }
+  .tea-item{ display:flex; align-items:center; gap:.75rem; padding:.6rem .75rem; border-radius:.75rem; color:#cbd5e1; text-decoration:none; transition:.15s; position:relative;}
+  .tea-item .icon{ width:34px; height:34px; border-radius:.75rem; display:grid; place-items:center; background: rgba(255,255,255,.06); }
+  .tea-item:hover{ background: rgba(255,255,255,.06); }
+  .tea-item.active{ background: rgba(16,185,129,.12); color:#34d399; }
+  #tea-root.collapsed { --sbw-tea:86px; }
+  #tea-root.collapsed .tea-label { opacity:0; width:0; margin:0; overflow:hidden; }
+  .tea-handle{ position:absolute; right:-12px; top:14px; width:26px; height:26px; border-radius:9999px; background:#059669; color:#fff; display:grid; place-items:center; box-shadow:0 6px 14px rgba(0,0,0,.35); cursor:pointer; font-weight:700; }
+</style>
+
+<div id="tea-root" class="flex dark:text-slate-100">
+
+  <aside id="tea-sidebar" class="relative">
+    <div class="p-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500 text-white grid place-items-center font-extrabold">EQ</div>
+        <div class="font-semibold tea-label">EconQuest · Teacher</div>
+      </div>
+
+      <nav class="mt-6 space-y-2">
+          <a class="tea-item active" href="{{ url_for('teacher.dashboard') }}"><span class="icon">📊</span><span class="tea-label">Dashboard</span></a>
+          <a class="tea-item" href="#modules"><span class="icon">📦</span><span class="tea-label">Módulos</span></a>
+          <a class="tea-item" href="#activities"><span class="icon">🧩</span><span class="tea-label">Actividades</span></a>
+          <a class="tea-item" href="#groups"><span class="icon">👥</span><span class="tea-label">Grupos</span></a>
+          <a class="tea-item" href="{{ url_for('teacher.students_list') }}"><span class="icon">🎒</span><span class="tea-label">Estudiantes</span></a>
+      </nav>
+    </div>
+    <button id="tea-handle" class="tea-handle"><span id="tea-icon">«</span></button>
+  </aside>
+
+  <section class="flex-1 p-6 bg-slate-50 dark:bg-slate-950">
+    {% block teacher_content %}{% endblock %}
+  </section>
+</div>
+
+<script>
+  // persistencia de colapso
+  const teaRoot = document.getElementById('tea-root');
+  const teaHandle = document.getElementById('tea-handle');
+  const teaIcon = document.getElementById('tea-icon');
+  function setTeaCollapsed(v){
+    if(v){ teaRoot.classList.add('collapsed'); teaIcon.textContent='»'; }
+    else { teaRoot.classList.remove('collapsed'); teaIcon.textContent='«'; }
+    localStorage.setItem('tea-collapsed', v ? '1':'0');
+  }
+  teaHandle.onclick = () => setTeaCollapsed(!teaRoot.classList.contains('collapsed'));
+  if(localStorage.getItem('tea-collapsed') === '1') setTeaCollapsed(true);
+</script>
+{% endblock %}

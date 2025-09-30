@@ -1,0 +1,48 @@
+{% extends 'teacher/layout.html' %}
+{% block teacher_content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-semibold text-emerald-200">Groups</h1>
+  <a href="{{ url_for('teacher.group_create') }}" class="px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white">+ New group</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="space-y-2 mb-4">
+      {% for cat, msg in messages %}
+        <div class="p-2 rounded bg-emerald-900/30 border border-emerald-700/50 text-emerald-100 text-sm">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-emerald-300">
+        <th class="text-left p-2">ID</th>
+        <th class="text-left p-2">Name</th>
+        <th class="text-left p-2">Grade</th>
+        <th class="text-left p-2">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in groups %}
+      <tr class="border-t border-emerald-800/50">
+        <td class="p-2 font-mono">{{ g.id }}</td>
+        <td class="p-2">{{ g.name }}</td>
+        <td class="p-2">{{ g.grade or '-' }}</td>
+        <td class="p-2 flex gap-2">
+          <a href="{{ url_for('teacher.group_edit', group_id=g.id) }}" class="px-3 py-1 rounded border border-emerald-700/70 hover:bg-emerald-900/30">Edit</a>
+          <form method="post" action="{{ url_for('teacher.group_delete', group_id=g.id) }}" onsubmit="return confirm('Delete this group?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="px-3 py-1 rounded bg-red-700/70 hover:bg-red-600 text-white">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td class="p-3 text-emerald-300" colspan="4">No groups yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
