@@ -1,0 +1,75 @@
+{% extends 'admin/layout.html' %} {% block admin_content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Settings · Game / XP</h1>
+  <a
+    class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700 dark:text-slate-100"
+    href="{{ url_for('admin.dashboard') }}"
+    >← Volver</a
+  >
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+  <div
+    class="bg-white dark:bg-slate-800 dark:text-slate-100 p-6 rounded-2xl shadow"
+  >
+    <h2 class="font-semibold mb-3">XP & Leveling</h2>
+    <form method="post" class="grid gap-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label class="text-sm"
+        >XP Base
+        <input
+          class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700"
+          name="xp_base"
+          type="number"
+          value="{{ settings.xp_base if settings else 100 }}"
+        />
+      </label>
+      <label class="text-sm"
+        >XP Growth (por nivel)
+        <input
+          class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700"
+          name="xp_growth"
+          type="number"
+          value="{{ settings.xp_growth if settings else 50 }}"
+        />
+      </label>
+      <div class="text-xs text-slate-500 dark:text-slate-400">
+        Fórmula sugerida: XP requeridos para subir =
+        <code>xp_base + xp_growth * (nivel - 1)</code>
+      </div>
+      <div>
+        <button class="px-3 py-2 rounded bg-emerald-600 text-white">
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div
+    class="bg-white dark:bg-slate-800 dark:text-slate-100 p-6 rounded-2xl shadow"
+  >
+    <h2 class="font-semibold mb-3">Intentos por actividad</h2>
+    <form method="post" class="grid gap-3" onsubmit="return true">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label class="text-sm"
+        >Max attempts (default)
+        <input
+          class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700"
+          name="max_attempts_default"
+          type="number"
+          value="{{ settings.max_attempts_default if settings else 3 }}"
+        />
+      </label>
+      <div class="text-xs text-slate-500 dark:text-slate-400">
+        Cada <em>Actividad</em> puede tener su propio límite
+        (<code>attempt_limit</code>). Si está vacío, usa este default.
+      </div>
+      <div>
+        <button class="px-3 py-2 rounded bg-emerald-600 text-white">
+          Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
