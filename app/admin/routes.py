@@ -1,27 +1,98 @@
 from datetime import datetime, timedelta
-from flask import render_template, abort, request, redirect, url_for, flash, jsonify, session as flask_session
+from flask import (
+    render_template, abort, request, redirect, url_for,
+    flash, jsonify, session as flask_session
+)
 from flask_login import login_required, current_user
-from ..models import Users, Modules, Activities, Attempts, AuthSession, db, ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT
+from ..models import (
+    Users, Modules, Activities, Attempts, AuthSession, db,
+    ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT
+)
+
+try:
+    from ..models import Groups, GroupMembers, ModuleAssignments
+except Exception:
+    Groups = GroupMembers = ModuleAssignments = None
+
+try:
+    from ..models import UserProfile
+except Exception:
+    UserProfile = None
+
+try:
+    from ..models import GameSettings
+except Exception:
+    GameSettings = None
+
+try:
+    from .. import csrf
+except Exception:
+    csrf = None
+
 from . import admin_bp
 
+from ..models import (
+    db, Users, Modules, Activities, Attempts, AuthSession,
+    ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT
+)
 
+try:
+    from ..models import GameSettings
+except Exception:
+    GameSettings = None
+
+ALLOWED_MODELS = {
+    "users": Users,
+    "modules": Modules,
+    "activities": Activities,
+    "attempts": Attempts,
+    "auth_sessions": AuthSession,
+}
+if GameSettings:
+    ALLOWED_MODELS["game_settings"] = GameSettings
+
+# Helpers
 def is_admin() -> bool:
-    return current_user.is_authenticated and current_user.role == "admin"
+    return current_user.is_authenticated and current_user.role == ROLE_ADMIN
 
 
+def _get_settings():
+    """
+    Obtiene (o crea) la fila única de GameSettings.
+    Si el modelo no existe, devuelve None.
+    """
+    if not GameSettings:
+        return None
+    s = GameSettings.query.get(1)
+    if not s:
+        s = GameSettings(id=1, xp_base=100, xp_growth=50, max_attempts_default=3)
+        db.session.add(s)
+        db.session.commit()
+    return s
+
+
+# Guards
 @admin_bp.before_request
 def guard():
-    if not current_user.is_authenticated: return abort(401)
-    if not is_admin(): return abort(403)
+    if not current_user.is_authenticated:
+        return abort(401)
+
+    if request.endpoint == "admin.api_ping":
+        return
+
+    if not is_admin():
+        return abort(403)
 
 
-# ---- Dashboard
+
+# Dashboard
 @admin_bp.route("/dashboard")
 @login_required
 def dashboard():
     total_users = Users.query.count()
     total_students = Users.query.filter_by(role=ROLE_STUDENT).count()
     total_teachers = Users.query.filter_by(role=ROLE_TEACHER).count()
+
     modules_count = Modules.query.count()
     published_mod = Modules.query.filter_by(is_published=True).count() if hasattr(Modules, "is_published") else 0
     activities_ct = Activities.query.count()
@@ -39,15 +110,17 @@ def dashboard():
         "availability_target": "99% objetivo",
     }
 
-    # activos en los últimos 2 minutos
     cutoff = datetime.utcnow() - timedelta(minutes=2)
     online = AuthSession.query.filter_by(active=True).filter(AuthSession.last_seen >= cutoff).count()
 
     recent_users = Users.query.order_by(Users.created_at.desc()).limit(8).all()
-    return render_template("admin/dashboard.html", stats=stats, online=online, recent_users=recent_users)
+
+    settings = _get_settings()
+    return render_template("admin/dashboard.html",
+                           stats=stats, online=online, recent_users=recent_users, settings=settings)
 
 
-# ---- Live Sessions (vista + API)
+# Live Sessions (vista + API)
 @admin_bp.route("/sessions")
 @login_required
 def sessions_live():
@@ -58,42 +131,88 @@ def sessions_live():
 @login_required
 def api_active_sessions():
     cutoff = datetime.utcnow() - timedelta(minutes=5)
-    rows = (AuthSession.query
-            .filter(AuthSession.active == True, AuthSession.last_seen >= cutoff)
-            .order_by(AuthSession.last_seen.desc())
-            .limit(100).all())
-    data = [{
-        "id": s.id,
-        "user_id": s.user_id,
-        "name": s.user.name,
-        "role": s.user.role,
-        "email": s.user.email,
-        "login_at": s.login_at.isoformat(timespec="seconds"),
-        "last_seen": s.last_seen.isoformat(timespec="seconds"),
-        "ip": s.ip
-    } for s in rows]
+    rows = (
+        AuthSession.query
+        .filter(AuthSession.active == True, AuthSession.last_seen >= cutoff)
+        .order_by(AuthSession.last_seen.desc())
+        .limit(200)
+        .all()
+    )
+    data = []
+    for s in rows:
+        data.append({
+            "id": s.id,
+            "user_id": s.user_id,
+            "name": getattr(s.user, "name", ""),
+            "role": getattr(s.user, "role", ""),
+            "email": getattr(s.user, "email", ""),
+            "login_at": s.login_at.isoformat(timespec="seconds") if s.login_at else None,
+            "last_seen": s.last_seen.isoformat(timespec="seconds") if s.last_seen else None,
+            "ip": getattr(s, "ip", None),
+        })
     return jsonify(data)
 
 
-@admin_bp.route("/api/ping", methods=["POST"])
-@login_required
-def api_ping():
-    sid = flask_session.get("auth_session_id")
-    if sid:
-        s = AuthSession.query.get(sid)
-        if s and s.active:
-            s.last_seen = datetime.utcnow()
+if csrf:
+    @admin_bp.route("/api/ping", methods=["POST", "GET"])
+    @csrf.exempt
+    @login_required
+    def api_ping():
+        now = datetime.utcnow()
+        ip  = request.headers.get("X-Forwarded-For", request.remote_addr)
+
+        sid = flask_session.get("auth_session_id")
+        s = AuthSession.query.get(sid) if sid else None
+
+        if not s:
+            s = AuthSession(
+                user_id=current_user.id,
+                login_at=now,
+                last_seen=now,
+                ip=ip,
+                active=True,
+            )
+            db.session.add(s)
             db.session.commit()
-    return ("", 204)
+            flask_session["auth_session_id"] = s.id
+        else:
+            s.last_seen = now
+            s.active = True
+            if not s.ip:
+                s.ip = ip
+            db.session.commit()
 
+        return ("", 204)
+else:
+    @admin_bp.route("/api/ping", methods=["POST", "GET"])
+    @login_required
+    def api_ping():
+        now = datetime.utcnow()
+        ip  = request.headers.get("X-Forwarded-For", request.remote_addr)
 
-# ---- Data Browser (lectura/edición segura)
-ALLOWED_MODELS = {
-    "users": Users,
-    "modules": Modules,
-    "activities": Activities,
-    "attempts": Attempts,
-}
+        sid = flask_session.get("auth_session_id")
+        s = AuthSession.query.get(sid) if sid else None
+
+        if not s:
+            s = AuthSession(
+                user_id=current_user.id,
+                login_at=now,
+                last_seen=now,
+                ip=ip,
+                active=True,
+            )
+            db.session.add(s)
+            db.session.commit()
+            flask_session["auth_session_id"] = s.id
+        else:
+            s.last_seen = now
+            s.active = True
+            if not s.ip:
+                s.ip = ip
+            db.session.commit()
+
+        return ("", 204)
+
 
 
 @admin_bp.route("/data")
@@ -105,8 +224,24 @@ def data_home():
 @admin_bp.route("/data/<model>", methods=["GET", "POST"])
 @login_required
 def data_table(model):
-    if model not in ALLOWED_MODELS: return abort(404)
+    if model not in ALLOWED_MODELS:
+        return abort(404)
     Model = ALLOWED_MODELS[model]
+
+    editable = {
+        "users": ["name", "email", "role", "locale"],
+        "modules": ["title", "summary", "is_published", "level", "xp_reward"],
+        "activities": ["title", "type", "max_points", "module_id", "position",
+                       "is_published", "attempt_limit", "default_xp", "content_json"],
+        "attempts": ["score"],
+        "groups": ["name", "teacher_id", "grade_level", "section"] if Groups else [],
+        "group_members": ["group_id", "user_id"] if GroupMembers else [],
+        "module_assignments": ["module_id", "target_type", "target_id"] if ModuleAssignments else [],
+        "user_profiles": ["credit_score", "cash_balance", "salary_monthly", "has_car",
+                          "car_payment_monthly", "level", "xp", "energy"] if UserProfile else [],
+        "game_settings": ["xp_base", "xp_growth", "max_attempts_default"] if GameSettings else [],
+        "auth_sessions": ["active"],  #  mín
+    }
 
     if request.method == "POST":
         _ = request.form.get("csrf_token")
@@ -114,7 +249,8 @@ def data_table(model):
         if action == "delete":
             rid = int(request.form.get("id"))
             row = Model.query.get_or_404(rid)
-            db.session.delete(row); db.session.commit()
+            db.session.delete(row)
+            db.session.commit()
             flash("Registro eliminado.", "success")
             return redirect(url_for("admin.data_table", model=model))
         elif action == "save":
@@ -122,23 +258,20 @@ def data_table(model):
             if rid:
                 row = Model.query.get_or_404(int(rid))
             else:
-                row = Model(); db.session.add(row)
+                row = Model()
+                db.session.add(row)
 
-            allowed = {
-                "users": ["name", "email", "role", "locale"],
-                "modules": ["title", "description", "is_published"],
-                "activities": ["title", "type", "max_points", "module_id"],
-                "attempts": ["score"],
-            }.get(model, [])
-
+            allowed = editable.get(model, [])
             for f in allowed:
                 if f in request.form:
                     val = request.form.get(f)
-                    col = getattr(Model, f).type.__class__.__name__.lower()
-                    if "integer" in col:
+
+                    coltype = getattr(Model, f).type.__class__.__name__.lower()
+                    if "integer" in coltype:
                         val = int(val) if val not in (None, "",) else None
-                    elif "boolean" in col:
-                        val = val in ("1", "true", "on", "True")
+                    elif "boolean" in coltype:
+                        # checkboxes llegan como "on" si están marcados
+                        val = val in ("1", "true", "on", "True", "on")
                     setattr(row, f, val)
 
             db.session.commit()
@@ -160,7 +293,7 @@ def data_table(model):
     return render_template("admin/data_table.html", model=model, columns=columns, page=pag, records=records)
 
 
-# ---- Users (roles) – mantén tu vista existente, o usa esta
+# Users (roles)
 @admin_bp.route("/users", methods=["GET", "POST"])
 @login_required
 def users_view():
@@ -183,3 +316,34 @@ def users_view():
     users = Users.query.order_by(Users.created_at.desc()).all()
     roles = [ROLE_STUDENT, ROLE_TEACHER, ROLE_ADMIN]
     return render_template("admin/users.html", users=users, roles=roles)
+
+
+# Settings (Game Settings)
+@admin_bp.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings_view():
+    settings = _get_settings()
+    if GameSettings is None:
+        flash("GameSettings no está definido en modelos o migraciones.", "error")
+        return redirect(url_for("admin.dashboard"))
+
+    if request.method == "POST":
+        _ = request.form.get("csrf_token")
+        try:
+            xp_base = int(request.form.get("xp_base", "100") or 100)
+            xp_growth = int(request.form.get("xp_growth", "50") or 50)
+            max_attempts_default = int(request.form.get("max_attempts_default", "3") or 3)
+
+            settings.xp_base = xp_base
+            settings.xp_growth = xp_growth
+            settings.max_attempts_default = max_attempts_default
+            settings.updated_at = datetime.utcnow()
+            db.session.commit()
+            flash("Configuración actualizada.", "success")
+            return redirect(url_for("admin.settings_view"))
+        except Exception:
+            db.session.rollback()
+            flash("No se pudo actualizar la configuración.", "error")
+
+    # Render
+    return render_template("admin/settings.html", settings=settings)
