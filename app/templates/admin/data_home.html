@@ -1,29 +1,24 @@
-{% extends 'admin/layout.html' %}
-{% block admin_content %}
+{% extends 'admin/layout.html' %} {% block admin_content %}
 <h1 class="text-xl font-semibold mb-4">Data Browser</h1>
 
-<div class="bg-slate-100 dark:bg-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow">
+<div
+  class="bg-slate-100 dark:bg-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow"
+>
   <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">
     Selecciona una tabla para ver/editar registros.
   </p>
 
   <ul class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    {% for key, Model in models.items() %}
     <li>
-      <a class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
-         href="{{ url_for('admin.data_table', model='users') }}">👤 Users</a>
+      <a
+        class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
+        href="{{ url_for('admin.data_table', model=key) }}"
+      >
+        {{ key|replace('_',' ')|title }}
+      </a>
     </li>
-    <li>
-      <a class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
-         href="{{ url_for('admin.data_table', model='modules') }}">📦 Modules</a>
-    </li>
-    <li>
-      <a class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
-         href="{{ url_for('admin.data_table', model='activities') }}">📝 Activities</a>
-    </li>
-    <li>
-      <a class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
-         href="{{ url_for('admin.data_table', model='attempts') }}">🎯 Attempts</a>
-    </li>
+    {% endfor %}
   </ul>
 </div>
 {% endblock %}
