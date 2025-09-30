@@ -9,24 +9,39 @@ from .. import csrf
 from datetime import datetime, timedelta
 from flask import session as flask_session, request
 from ..models import AuthSession, db  # importa el modelo nuevo
+from werkzeug.security import check_password_hash
 
 def _record_login(user):
+    now = datetime.utcnow()
+    ip  = request.headers.get("X-Forwarded-For", request.remote_addr)
+
     s = AuthSession(
         user_id=user.id,
-        ip=request.headers.get("X-Forwarded-For", request.remote_addr),
-        user_agent=(request.headers.get("User-Agent") or "")[:255],
+        login_at=now,
+        last_seen=now,
+        ip=ip,
+        active=True,
     )
-    db.session.add(s); db.session.commit()
+    # si tu modelo tiene user_agent, se llena; si no, no pasa nada
+    if hasattr(s, "user_agent"):
+        s.user_agent = (request.headers.get("User-Agent") or "")[:255]
+
+    db.session.add(s)
+    db.session.commit()
     flask_session["auth_session_id"] = s.id
 
 def _record_logout():
     sid = flask_session.pop("auth_session_id", None)
-    if sid:
-        s = AuthSession.query.get(sid)
-        if s and s.active:
-            s.active = False
-            s.logout_at = datetime.utcnow()
-            db.session.commit()
+    if not sid:
+        return
+    s = AuthSession.query.get(sid)
+    if not s:
+        return
+    s.active = False
+    s.last_seen = datetime.utcnow()
+    if hasattr(s, "logout_at"):
+        s.logout_at = datetime.utcnow()
+    db.session.commit()
 
 @auth_bp.route("/register", methods=["GET","POST"])
 def register():
@@ -44,34 +59,65 @@ def register():
         return redirect(url_for("auth.login"))
     return render_template("auth/register.html", form=form)
 
-@auth_bp.route("/login", methods=["GET","POST"])
+
+
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    # si ya está autenticado, redirige por rol
     if current_user.is_authenticated:
-        return redirect(url_for(
-            "admin.dashboard" if current_user.role=="admin" else
-            "teacher.dashboard" if current_user.role=="teacher" else
-            "student.dashboard"
-        ))
+        # Ya logueado: manda por rol
+        role = (current_user.role or "student").strip().lower()
+        if role == "admin":
+            return redirect(url_for("admin.dashboard"))
+        elif role == "teacher":
+            return redirect(url_for("teacher.dashboard"))
+        else:
+            return redirect(url_for("student_ui.dashboard"))
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = Users.query.filter_by(email=form.email.data.lower()).first()
-        if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember.data)
-            _record_login(user)
-            # redirige directo a dashboard según rol
-            return redirect(url_for(
-                "admin.dashboard" if user.role=="admin" else
-                "teacher.dashboard" if user.role=="teacher" else
-                "student.dashboard"
-            ))
-        flash("Credenciales inválidas.", "error")
-    elif form.is_submitted():
-        errs = "; ".join(f"{f}: {', '.join(msgs)}" for f, msgs in form.errors.items()) or "Error desconocido"
-        flash(f"Formulario inválido: {errs}", "error")
+        email = (form.email.data or "").strip().lower()
+        user = Users.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.hashed_pw, form.password.data):
+            # Normaliza y persiste role por si estuviera con mayúsculas/espacios
+            user.role = (user.role or "student").strip().lower()
+            db.session.commit()
+
+            login_user(user, remember=getattr(form, "remember_me", False))
+            if user and check_password_hash(user.hashed_pw, form.password.data):
+                user.role = (user.role or "student").strip().lower()
+                db.session.commit()
+
+                login_user(user, remember=getattr(form, "remember_me", False))
+                _record_login(user)  # <---- IMPORTANTE
+
+                nxt = request.args.get("next")
+                if nxt:
+                    return redirect(nxt)
+                if user.role == "admin":
+                    return redirect(url_for("admin.dashboard"))
+                elif user.role == "teacher":
+                    return redirect(url_for("teacher.dashboard"))
+                else:
+                    return redirect(url_for("student_ui.dashboard"))
+
+            # Respeta ?next si viene de @login_required
+            nxt = request.args.get("next")
+            if nxt:
+                return redirect(nxt)
+
+            if user.role == "admin":
+                return redirect(url_for("admin.dashboard"))
+            elif user.role == "teacher":
+                return redirect(url_for("teacher.dashboard"))
+            else:
+                return redirect(url_for("student_ui.dashboard"))
+        else:
+            flash("Invalid email or password.", "error")
 
     return render_template("auth/login.html", form=form)
+
+
 
 @auth_bp.route("/logout")
 def logout():

@@ -1,0 +1,23 @@
+{% extends 'teacher/layout.html' %}
+{% block teacher_content %}
+<h1 class="text-2xl font-semibold text-emerald-200 mb-4">{{ 'Edit group' if group else 'New group' }}</h1>
+
+<form method="post" class="max-w-xl space-y-4">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <label class="block text-sm text-emerald-200">Name
+    <input name="name" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
+           value="{{ group.name if group else '' }}" required>
+  </label>
+
+  <label class="block text-sm text-emerald-200">Grade (optional)
+    <input name="grade" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
+           value="{{ group.grade if group else '' }}">
+  </label>
+
+  <div class="flex gap-2">
+    <button class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white">{{ 'Save' if group else 'Create' }}</button>
+    <a href="{{ url_for('teacher.groups') }}" class="px-4 py-2 rounded border border-emerald-700/70 hover:bg-emerald-900/30">Cancel</a>
+  </div>
+</form>
+{% endblock %}
