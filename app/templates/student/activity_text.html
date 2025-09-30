@@ -1,0 +1,26 @@
+{% extends 'student/layout.html' %}
+{% block student_content %}
+
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-2xl font-bold text-emerald-300">{{ activity.title }}</h1>
+  <p class="text-emerald-200/80 mt-1">Type: {{ activity.type or 'text' }}</p>
+
+  <div class="mt-4 p-4 rounded-xl bg-emerald-900/30 border border-emerald-800/40">
+    {% if content.text %}
+      <p class="leading-relaxed text-emerald-100">{{ content.text }}</p>
+    {% elif content.html %}
+      {{ content.html | safe }}
+    {% else %}
+      <p class="leading-relaxed text-emerald-100">Read this activity and claim your XP.</p>
+    {% endif %}
+  </div>
+
+  <form method="post" class="mt-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white">
+      Claim XP
+    </button>
+  </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'student/layout.html' %}
+{% block student_content %}
+
+<style>
+  .burst {
+    display:inline-block; padding:.35rem .7rem; border-radius:9999px;
+    background: rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.5);
+    color:#d1fae5; font-weight:700;
+    animation: pop .9s ease both;
+  }
+  @keyframes pop {
+    0% { transform: translateY(12px) scale(.9); opacity:0; }
+    40% { transform: translateY(-4px) scale(1.04); opacity:1; }
+    100% { transform: translateY(0) scale(1); opacity:1; }
+  }
+</style>
+
+<div class="max-w-2xl mx-auto text-emerald-100">
+  <h1 class="text-2xl font-bold text-emerald-300">{{ activity.title }}</h1>
+
+  <div class="mt-4 p-5 rounded-xl bg-emerald-900/30 border border-emerald-800/40">
+    <div class="text-emerald-200/90">Submitted! Your stats changed:</div>
+    <div id="bursts" class="mt-3 flex flex-wrap gap-2">
+      {% if result.xp %}
+        <span class="burst">+{{ result.xp }} XP</span>
+      {% endif %}
+      {% if result.delta_credit %}
+        <span class="burst">{{ '+' if result.delta_credit>0 else '' }}{{ result.delta_credit }} credit</span>
+      {% endif %}
+      {% if result.delta_cash %}
+        <span class="burst">{{ '+' if result.delta_cash>0 else '' }}${{ result.delta_cash|round(2) }}</span>
+      {% endif %}
+      {% if result.delta_energy %}
+        <span class="burst">{{ '+' if result.delta_energy>0 else '' }}{{ result.delta_energy }} energy</span>
+      {% endif %}
+    </div>
+
+    <a href="{{ url_for('student_ui.dashboard') }}"
+       class="inline-block mt-5 px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white">
+      Back to dashboard
+    </a>
+  </div>
+</div>
+
+<script>
+  // Staggered reveal
+  document.querySelectorAll('.burst').forEach((el, i) => {
+    el.style.animationDelay = (i * 140) + 'ms';
+  });
+</script>
+
+{% endblock %}

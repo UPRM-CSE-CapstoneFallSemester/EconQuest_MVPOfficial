@@ -1,0 +1,26 @@
+{% extends 'student/../../../../EconQuest_MVPOfficial/app/templates/student/layout.html' %}
+{% block student_content %}
+<h1 class="text-2xl font-semibold text-emerald-200 mb-4">{{ module.title }}</h1>
+
+<div class="grid gap-4 md:grid-cols-2">
+  {% for a in activities %}
+  <div class="p-4 rounded-xl bg-emerald-900/30 border border-emerald-800/60">
+    <div class="text-emerald-100 font-semibold">{{ a.title }}</div>
+    <div class="text-emerald-300 text-sm mt-1">Type: {{ a.type }}{% if a.max_points %} · Max {{ a.max_points }} pts{% endif %}</div>
+
+    <div class="mt-3 flex gap-2">
+      {% if a.type == 'mcq_sim' %}
+        <a class="px-3 py-1 rounded bg-emerald-700/70 hover:bg-emerald-600 text-white"
+           href="{{ url_for('student_ui.play_activity', activity_id=a.id) }}">Play</a>
+      {% else %}
+        <a class="px-3 py-1 rounded border border-emerald-700/70 hover:bg-emerald-900/30"
+           href="{{ url_for('student_ui.play_activity', activity_id=a.id) }}">Open</a>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="text-emerald-300">No activities yet.</div>
+  {% endfor %}
+</div>
+{% endblock %}
+

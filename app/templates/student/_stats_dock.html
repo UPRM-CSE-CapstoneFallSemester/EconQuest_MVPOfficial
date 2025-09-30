@@ -1,0 +1,153 @@
+{# Dock de stats colapsable (independiente del sidebar) #}
+<style>
+  :root{
+    --stats-width: 320px;           /* ancho panel desktop */
+    --stats-handle: 34px;           /* ancho/alto de la manija */
+    --stats-top: 88px;              /* separación desde el top (debajo del navbar) */
+  }
+
+  /* Contenedor fijo a la derecha */
+  #statsDock{
+    position: fixed;
+    right: 18px;
+    top: var(--stats-top);
+    width: var(--stats-width);
+    z-index: 50;
+    transform: translateX(0);
+    transition: transform .25s ease, opacity .25s ease;
+  }
+  /* Dejar sólo la manija visible cuando está colapsado */
+  #statsDock.collapsed{
+    transform: translateX(calc(100% - var(--stats-handle)));
+    opacity: .95;
+  }
+
+  /* Tarjeta */
+  #statsDock .stats-card{
+    background: #0b1324;
+    color: #e6f7f1;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 18px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.4);
+    padding: 16px 16px 14px;
+  }
+  #statsDock .stats-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  #statsDock .stats-title{ font-weight:700; }
+  #statsDock .stats-badge{ font-size:12px; opacity:.6; }
+
+  #statsDock ul{ list-style:none; padding:0; margin:0; }
+  #statsDock li{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:8px 10px;
+    border-radius:10px;
+  }
+  #statsDock li:hover{
+    background: rgba(16,185,129,.08);
+  }
+  #statsDock .k{ display:flex; align-items:center; gap:8px; color:#cdebe3; }
+  #statsDock .v{ font-weight:700; color:#9ff3cf; }
+
+  #statsDock .hint{
+    font-size:12px; color:#b6d7cf; opacity:.75; margin-top:8px;
+    background: rgba(16,185,129,.06);
+    border:1px solid rgba(16,185,129,.18);
+    padding:6px 8px; border-radius:10px;
+  }
+
+  /* Manija (botón flotante pegado al borde del panel) */
+  #statsHandle{
+    position:absolute;
+    left: calc(-1 * (var(--stats-handle)/2));
+    top: 14px;
+    width: var(--stats-handle);
+    height: var(--stats-handle);
+    border-radius: 9999px;
+    background: #10b981;
+    color:#06281f;
+    font-weight: 900;
+    display:grid; place-items:center;
+    box-shadow: 0 10px 22px rgba(16,185,129,.35);
+    border: 1px solid rgba(6,24,20,.45);
+    cursor:pointer;
+    transition: transform .2s ease, filter .2s ease;
+  }
+  #statsHandle:hover{ transform: translateY(-1px); filter:brightness(1.05); }
+
+  /* — Responsive: lo convertimos en barra inferior — */
+  @media (max-width: 1024px){
+    #statsDock{
+      left: 12px; right: 12px; width: auto;
+      top: auto; bottom: 12px;
+      transform: translateY(0);
+    }
+    #statsDock.collapsed{
+      transform: translateY(calc(100% - var(--stats-handle)));
+    }
+    #statsHandle{
+      left: 50%; top: -18px; transform: translateX(-50%);
+    }
+    #statsHandle:hover{ transform: translateX(-50%) translateY(-1px); }
+  }
+</style>
+
+<aside id="statsDock" aria-label="Mis stats">
+  <button id="statsHandle" class="shadow" aria-controls="statsDock"
+          aria-expanded="true" title="Mostrar/ocultar stats">»</button>
+
+  <div class="stats-card">
+    <div class="stats-head">
+      <div class="stats-title"> Mis stats</div>
+    </div>
+
+    <ul>
+      <li><div class="k">🪪 <span>Crédito</span></div><div class="v">{{ profile.credit_score }}</div></li>
+      <li><div class="k">💵 <span>Efectivo</span></div><div class="v">$ {{ profile.cash_balance }}</div></li>
+      <li><div class="k">💼 <span>Salario</span></div><div class="v">$ {{ profile.salary_monthly }} / mes</div></li>
+      <li><div class="k">📈 <span>Ingreso diario</span></div><div class="v">$ {{ (profile.salary_monthly/30)|round(0) }}</div></li>
+      <li><div class="k">🚗 <span>Carro</span></div><div class="v">Si : $ {{ profile.car_payment_monthly }}/mes</div></li>
+      <li><div class="k">⭐ <span>Nivel</span></div><div class="v">{{ profile.level }}</div></li>
+      <li><div class="k">🔋 <span>Energía</span></div><div class="v">{{ profile.energy }}</div></li>
+    </ul>
+
+    <div class="hint">Gana $ con misiones, controla gastos y sube tu score. 🎯</div>
+  </div>
+</aside>
+
+<script>
+(function(){
+  const dock   = document.getElementById('statsDock');
+  const handle = document.getElementById('statsHandle');
+
+  const setCollapsed = (v) => {
+    dock.classList.toggle('collapsed', v);
+    handle.setAttribute('aria-expanded', String(!v));
+    // flecha: si está colapsado, apunta hacia la app (abrir)
+    const isMobile = window.matchMedia('(max-width:1024px)').matches;
+    handle.textContent = v ? (isMobile ? '▲' : '«') : (isMobile ? '▼' : '»');
+    try{ localStorage.setItem('stats-collapsed', v ? '1':'0'); }catch(_){}
+  };
+
+  // estado persistido
+  let initial = false;
+  try{ initial = localStorage.getItem('stats-collapsed') === '1'; }catch(_){}
+  setCollapsed(initial);
+
+  handle.addEventListener('click', () => setCollapsed(!dock.classList.contains('collapsed')));
+
+  // Acceso rápido opcional: Ctrl/Cmd + S para mostrar/ocultar (no bloquea “Guardar” en formularios)
+  window.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
+      e.preventDefault();
+      setCollapsed(!dock.classList.contains('collapsed'));
+    }
+  });
+
+  // Ajusta el ícono al cambiar de tamaño (desktop <-> mobile)
+  window.addEventListener('resize', () => {
+    const v = dock.classList.contains('collapsed'); setCollapsed(v);
+  });
+})();
+</script>
