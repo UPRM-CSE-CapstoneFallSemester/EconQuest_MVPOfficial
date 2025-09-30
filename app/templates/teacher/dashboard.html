@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="flex items-center justify-between">
+  <h1 class="text-xl font-semibold">Panel docente</h1>
+  <div class="flex gap-2">
+    <a class="px-3 py-2 rounded bg-blue-600 text-white" href="{{ url_for('teacher.create_module') }}">Nuevo módulo</a>
+    <a class="px-3 py-2 rounded bg-slate-800 text-white" href="{{ url_for('teacher.create_activity') }}">Nueva actividad</a>
+  </div>
+</div>
+<div class="grid md:grid-cols-2 gap-4 mt-4">
+  {% for m in modules %}
+  <div class="bg-white p-5 rounded-2xl shadow">
+    <h2 class="font-semibold">{{ m.title }}</h2>
+    <span class="text-xs px-2 py-1 rounded {{ 'bg-green-100 text-green-800' if m.is_published else 'bg-slate-200 text-slate-700' }}">{{ 'Publicado' if m.is_published else 'Borrador' }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

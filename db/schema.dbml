@@ -1,0 +1,97 @@
+// DBML del MVP (igual al acordado para dbdiagram.io)
+Enum role { student; teacher; admin }
+Enum locale { es; en }
+Enum activity_type { quiz; scenario; simulation; budget; credit }
+
+Table users {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  email varchar(255) [not null, unique]
+  role role [not null, default: 'student']
+  locale locale [not null, default: 'es']
+  hashed_pw varchar(255) [not null]
+  created_at datetime [not null, default: `now()`]
+}
+
+Table classes {
+  id int [pk, increment]
+  name varchar(120) [not null]
+  teacher_id int [not null]
+  code varchar(32) [not null, unique]
+  created_at datetime [not null, default: `now()`]
+}
+
+Table enrollments {
+  id int [pk, increment]
+  class_id int [not null]
+  user_id int [not null]
+  enrolled_at datetime [not null, default: `now()`]
+  Indexes { (class_id, user_id) [unique, name: 'uq_enrollments_class_user'] }
+}
+
+Table modules {
+  id int [pk, increment]
+  title varchar(160) [not null]
+  lang locale [not null, default: 'es']
+  is_published boolean [not null, default: false]
+  created_at datetime [not null, default: `now()`]
+}
+
+Table activities {
+  id int [pk, increment]
+  module_id int [not null]
+  type activity_type [not null, default: 'scenario']
+  max_points int [not null, default: 100]
+  config_json json [not null]
+  created_at datetime [not null, default: `now()`]
+  Indexes { module_id }
+}
+
+Table attempts {
+  id int [pk, increment]
+  activity_id int [not null]
+  user_id int [not null]
+  answers_json json [not null]
+  score decimal(5,2) [not null, default: 0.0]
+  started_at datetime [not null, default: `now()`]
+  ended_at datetime
+  Indexes { (activity_id, user_id) [name: 'ix_attempts_activity_user'], user_id }
+}
+
+Table score_events {
+  id int [pk, increment]
+  user_id int [not null]
+  activity_id int [not null]
+  delta int [not null]
+  reason varchar(160)
+  created_at datetime [not null, default: `now()`]
+  Indexes { user_id, activity_id }
+}
+
+Table badges {
+  id int [pk, increment]
+  code varchar(50) [not null, unique]
+  name varchar(120) [not null]
+  description text
+  criteria_json json [not null]
+  created_at datetime [not null, default: `now()`]
+}
+
+Table user_badges {
+  id int [pk, increment]
+  user_id int [not null]
+  badge_id int [not null]
+  awarded_at datetime [not null, default: `now()`]
+  Indexes { (user_id, badge_id) [unique, name: 'uq_user_badges_user_badge'] }
+}
+
+Ref: classes.teacher_id > users.id [delete: restrict, update: cascade]
+Ref: enrollments.class_id > classes.id [delete: cascade, update: cascade]
+Ref: enrollments.user_id  > users.id   [delete: cascade, update: cascade]
+Ref: activities.module_id > modules.id [delete: cascade, update: cascade]
+Ref: attempts.activity_id  > activities.id  [delete: cascade, update: cascade]
+Ref: attempts.user_id      > users.id       [delete: cascade, update: cascade]
+Ref: score_events.user_id  > users.id       [delete: cascade, update: cascade]
+Ref: score_events.activity_id > activities.id [delete: cascade, update: cascade]
+Ref: user_badges.user_id > users.id   [delete: cascade, update: cascade]
+Ref: user_badges.badge_id > badges.id [delete: cascade, update: cascade]

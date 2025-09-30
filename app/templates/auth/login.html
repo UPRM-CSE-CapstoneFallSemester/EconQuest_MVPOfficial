@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-bg">
+  <div class="auth-card">
+    <!-- Brand -->
+    <div class="brand-badge"><div class="brand-mark">EQ</div></div>
+    <h1 class="text-3xl font-extrabold text-emerald-900 text-center">EconQuest</h1>
+    <p class="text-center text-slate-500 mt-1">Sign in to continue your quest</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mt-4">
+          {% for category, msg in messages %}
+            <div class="alert {{ 'alert-ok' if category=='success' else 'alert-err' }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('auth.login') }}" method="post" class="mt-4">
+      {{ form.hidden_tag() }}
+
+      <div class="form-row">
+        <label>Email</label>
+        {{ form.email(class_='auth-input', placeholder='you@example.com', autocomplete='email', required=True) }}
+      </div>
+
+      <div class="form-row">
+        <label>Password</label>
+        {{ form.password(class_='auth-input', placeholder='••••••••', autocomplete='current-password', required=True) }}
+      </div>
+
+      <div class="auth-actions">
+        <label class="inline-flex items-center gap-2">
+          {{ form.remember() }} <span>Remember me</span>
+        </label>
+        <a class="auth-link" href="{{ url_for('auth.register') }}">Create account</a>
+      </div>
+
+      <button type="submit" class="auth-btn-primary">Sign in</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

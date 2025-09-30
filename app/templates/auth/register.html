@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="auth-bg">
+  <div class="auth-card">
+    <div class="brand-badge"><div class="brand-mark">EQ</div></div>
+    <h1 class="text-3xl font-extrabold text-emerald-900 text-center">EconQuest</h1>
+    <p class="text-center text-slate-500 mt-1">Create your account</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mt-4">
+          {% for category, msg in messages %}
+            <div class="alert {{ 'alert-ok' if category=='success' else 'alert-err' }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for('auth.register') }}" method="post" class="mt-4">
+      {{ form.hidden_tag() }}
+
+      <div class="form-row">
+        <label>Full name</label>
+        {{ form.name(class_='auth-input', placeholder='Your name', required=True) }}
+      </div>
+
+      <div class="form-row">
+        <label>Email</label>
+        {{ form.email(class_='auth-input', placeholder='you@example.com', autocomplete='email', required=True) }}
+      </div>
+
+      <div class="form-row">
+        <label>Password</label>
+        {{ form.password(class_='auth-input', placeholder='Min 6 characters', autocomplete='new-password', required=True) }}
+      </div>
+
+      <div class="form-row">
+        <label>Confirm password</label>
+        {{ form.confirm(class_='auth-input', placeholder='Repeat password', autocomplete='new-password', required=True) }}
+      </div>
+
+      <button type="submit" class="auth-btn-primary">Create account</button>
+
+      <p class="text-center text-sm text-slate-600 mt-3">
+        Already have an account?
+        <a class="auth-link" href="{{ url_for('auth.login') }}">Sign in</a>
+      </p>
+    </form>
+  </div>
+</section>
+{% endblock %}

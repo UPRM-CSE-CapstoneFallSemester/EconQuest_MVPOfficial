@@ -1,0 +1,57 @@
+{% extends 'admin/layout.html' %}
+{% block admin_content %}
+<h1 class="text-xl font-semibold mb-4">Panel de administración</h1>
+
+<div class="grid md:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Disponibilidad</div>
+    <div class="text-2xl font-semibold text-emerald-700 mt-1">{{ stats.availability_target }}</div>
+    <div class="text-xs text-slate-500 mt-2">Objetivo de plataforma</div>
+  </div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">p95 (objetivo)</div>
+    <div class="text-2xl font-semibold text-emerald-700 mt-1">{{ stats.p95_target }}</div>
+    <div class="text-xs text-slate-500 mt-2">/student/dashboard</div>
+  </div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Usuarios (online)</div>
+    <div class="text-2xl font-semibold text-emerald-700 mt-1">{{ stats.total_users }} <span class="text-sm text-slate-400">· {{ online }} online</span></div>
+    <div class="text-xs text-slate-500 mt-2">{{ stats.students }} estudiantes · {{ stats.teachers }} docentes</div>
+  </div>
+</div>
+
+<div class="grid md:grid-cols-3 gap-4 mb-10">
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Módulos</div>
+    <div class="text-2xl font-semibold text-emerald-700 mt-1">{{ stats.modules }}</div>
+    <div class="text-xs text-slate-500 mt-2">{{ stats.published }} publicados</div>
+  </div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Actividades</div>
+    <div class="text-2xl font-semibold text-emerald-700 mt-1">{{ stats.activities }}</div>
+    <div class="text-xs text-slate-500 mt-2">Totales en el sistema</div>
+  </div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Intentos</div>
+    <div class="text-2xl font-semibold text-emerald-700 mt-1">{{ stats.attempts }}</div>
+    <div class="text-xs text-slate-500 mt-2">Histórico de prácticas</div>
+  </div>
+</div>
+
+<div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-6 rounded-2xl shadow">
+  <div class="flex items-center justify-between">
+    <h2 class="font-semibold">Usuarios recientes</h2>
+    <a class="px-3 py-2 rounded bg-blue-600 text-white" href="{{ url_for('admin.users_view') }}">Gestionar roles</a>
+  </div>
+  <table class="mt-3 w-full text-sm">
+    <thead><tr class="text-left"><th>Nombre</th><th>Email</th><th>Rol</th><th>Creado</th></tr></thead>
+    <tbody>
+      {% for u in recent_users %}
+      <tr class="border-t border-slate-200 dark:border-slate-700">
+        <td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td><td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-# EconQuest (MVP) Official
+# EconQuest (MVP)
 
 Bilingual, game-style micro-simulations for financial literacy. Flask + SQLite + Jinja.  
 Roles: **student**, **teacher**, **admin**.
@@ -26,3 +26,5 @@ copy .env.example .env          # luego puedes editar claves si deseas
 
 flask --app run.py db upgrade   # crea la base de datos (SQLite en /instance)
 flask --app run.py seed         # usuarios de demo y datos básicos
+
+python run.py                   # abre http://127.0.0.1:5000

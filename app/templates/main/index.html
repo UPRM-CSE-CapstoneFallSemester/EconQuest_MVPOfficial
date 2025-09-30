@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero-wrap hero-bg text-white">
+  <div class="max-w-6xl mx-auto px-4 py-10 md:py-16">
+    <div class="grid md:grid-cols-2 gap-10 items-center">
+      <!-- COLUMNA IZQUIERDA: CTA + MINI SIM -->
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 reveal">
+          <span class="text-sm">🌱 Aprendizaje financiero como RPG</span>
+        </div>
+
+        <h1 class="mt-4 text-3xl md:text-5xl font-bold leading-tight reveal-2">
+          ¡Bienvenidos a <span class="underline decoration-emerald-300">EconQuest</span>!
+        </h1>
+
+        <p class="mt-3 md:mt-4 text-white/90 max-w-prose reveal-3">
+          Gana puntos tomando decisiones reales: salario, presupuesto, crédito y más.
+          Misiones cortas, feedback inmediato y progreso tipo juego.
+        </p>
+
+        <!-- BOTONES -->
+        <div class="mt-6 flex flex-wrap gap-3 reveal-3">
+          <a href="{{ url_for('auth.login') }}"
+             class="btn-soft px-5 py-3 rounded-xl text-white font-medium">
+            Iniciar sesión
+          </a>
+          <a href="{{ url_for('auth.register') }}"
+             class="px-5 py-3 rounded-xl bg-white text-emerald-900 font-semibold shadow-md hover:shadow-lg transition">
+            Crear cuenta
+          </a>
+        </div>
+
+        <!-- MINI SIMULACIÓN (DEBAJO DE LOS BOTONES) -->
+        <div class="mt-8 max-w-lg rounded-3xl shadow-2xl ring-1 ring-white/20 bg-white/95 text-emerald-900 p-6 reveal-3 sim-card">
+          <h3 class="font-semibold">Mini-simulación</h3>
+          <p class="text-sm mt-2 text-emerald-900/80">Tienes $1000 este mes. ¿Qué haces primero?</p>
+          <ul class="mt-3 text-sm list-disc pl-5 text-emerald-900/80">
+            <li>Separar 10% para ahorro</li>
+            <li>Pagar renta y servicios</li>
+            <li>Evitar compras a crédito impulsivas</li>
+          </ul>
+        </div>
+
+        <p class="mt-6 text-white/70 text-sm reveal-3">
+          * Privacidad simple · Sin cuentas bancarias reales · Bilingüe ES/EN
+        </p>
+      </div>
+
+        <!-- COLUMNA DERECHA: BURBUJAS -->
+        <div class="relative hidden md:block h-[420px]">
+
+          <div class="absolute top-0 badge-float badge-indent">
+            <div class="rounded-2xl px-4 py-3 bg-white/20 border border-white/30 backdrop-blur">
+              🪙 +15 pts
+            </div>
+          </div>
+
+          <div class="absolute top-28 badge-float badge-indent" style="animation-delay:.25s">
+            <div class="rounded-2xl px-4 py-3 bg-white/20 border border-white/30 backdrop-blur">
+              📈 Presupuesto equilibrado
+            </div>
+          </div>
+
+          <div class="absolute top-56 badge-float badge-indent" style="animation-delay:.5s">
+            <div class="rounded-2xl px-4 py-3 bg-white/20 border border-white/30 backdrop-blur">
+              🏅 Insignia: Ahorrista
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'admin/layout.html' %}
+{% block admin_content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Data: {{ model|capitalize }}</h1>
+  <a class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700 dark:text-slate-100" href="{{ url_for('admin.data_home') }}">← Volver</a>
+</div>
+
+<div class="bg-white dark:bg-slate-800 dark:text-slate-100 p-5 rounded-2xl shadow overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead class="text-slate-600 dark:text-slate-300">
+      <tr class="text-left">
+        {% for c in columns %}<th class="py-2 pr-3">{{ c }}</th>{% endfor %}
+        <th class="py-2">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for record in records %}
+      <tr class="border-t border-slate-200 dark:border-slate-700 align-top">
+        {% for c in columns %}
+          <td class="py-2 pr-3">{{ record[c] }}</td>
+        {% endfor %}
+        <td class="py-2">
+          <form method="post" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" value="{{ record['id'] }}">
+            <button class="px-2 py-1 rounded bg-red-600 text-white" onclick="return confirm('Eliminar #{{ record['id'] }}?')">Eliminar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="mt-4 flex items-center gap-2">
+    {% if page.has_prev %}
+      <a class="px-3 py-1 rounded border dark:border-slate-700" href="{{ url_for('admin.data_table', model=model, page=page.prev_num) }}">← Prev</a>
+    {% endif %}
+    <div class="text-sm text-slate-500 dark:text-slate-400">Página {{ page.page }} de {{ page.pages or 1 }}</div>
+    {% if page.has_next %}
+      <a class="px-3 py-1 rounded border dark:border-slate-700" href="{{ url_for('admin.data_table', model=model, page=page.next_num) }}">Next →</a>
+    {% endif %}
+  </div>
+
+  <details class="mt-6">
+    <summary class="cursor-pointer text-emerald-700 dark:text-emerald-400 font-semibold">Añadir / Editar</summary>
+    <form method="post" class="mt-3 grid md:grid-cols-2 gap-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="save">
+      <label class="text-sm">ID (para editar): <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="id" placeholder="deja vacío para crear"></label>
+
+      {% if model == 'users' %}
+        <label class="text-sm">name <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="name"></label>
+        <label class="text-sm">email <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="email"></label>
+        <label class="text-sm">role
+          <select class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="role">
+            <option>student</option><option>teacher</option><option>admin</option>
+          </select>
+        </label>
+        <label class="text-sm">locale <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="locale" value="es"></label>
+      {% elif model == 'modules' %}
+        <label class="text-sm">title <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="title"></label>
+        <label class="text-sm">description <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="description"></label>
+        <label class="text-sm">is_published <input type="checkbox" name="is_published"></label>
+      {% elif model == 'activities' %}
+        <label class="text-sm">title <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="title"></label>
+        <label class="text-sm">type <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="type"></label>
+        <label class="text-sm">max_points <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="max_points" type="number"></label>
+        <label class="text-sm">module_id <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="module_id" type="number"></label>
+      {% elif model == 'attempts' %}
+        <label class="text-sm">score <input class="border rounded px-2 py-1 w-full dark:bg-slate-900 dark:border-slate-700" name="score" type="number" step="1"></label>
+      {% endif %}
+
+      <div class="md:col-span-2">
+        <button class="px-3 py-2 rounded bg-emerald-600 text-white">Guardar</button>
+      </div>
+    </form>
+  </details>
+</div>
+{% endblock %}
