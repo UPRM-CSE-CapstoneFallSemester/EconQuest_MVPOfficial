@@ -128,7 +128,7 @@ def activity_create():
     a = Activities(
         module_id=module_id,
         title=title,
-        type=atype or "quiz",
+        type= act_type or "quiz",
         max_points=max_points,
         position=position,
         is_published=bool(is_published),
