@@ -184,7 +184,6 @@ def dashboard():
               .count())
 
     recent_users = Users.query.order_by(Users.created_at.desc()).limit(8).all()
-
     settings = _get_settings()
     modules = Modules.query.order_by(Modules.id.desc()).all()
     recent_activities = Activities.query.order_by(Activities.id.desc()).limit(20).all()
@@ -426,5 +425,132 @@ def settings_view():
             db.session.rollback()
             flash("No se pudo actualizar la configuración.", "error")
 
+
     # Render
     return render_template("admin/settings.html", settings=settings)
+
+# --------- MODULES (ADMIN) ----------
+@admin_bp.route("/modules/create", methods=["POST"])
+@login_required
+def module_create_admin():
+    _ = request.form.get("csrf_token")
+    title = (request.form.get("title") or "").strip()
+    if not title:
+        flash("El título es obligatorio.", "error")
+        return redirect(url_for("admin.dashboard") + "#modules")
+
+    m = Modules(
+        title=title,
+        summary=request.form.get("summary") or "",
+        level=int(request.form.get("level") or 1),
+        xp_reward=int(request.form.get("xp_reward") or 0),
+        is_published=bool(request.form.get("is_published")),
+    )
+    db.session.add(m)
+    db.session.commit()
+    flash("Módulo creado.", "success")
+    return redirect(url_for("admin.dashboard") + "#modules")
+
+
+@admin_bp.route("/modules/<int:module_id>/update", methods=["POST"])
+@login_required
+def module_update_admin(module_id):
+    _ = request.form.get("csrf_token")
+    m = Modules.query.get_or_404(module_id)
+    m.title = request.form.get("title") or m.title
+    m.summary = request.form.get("summary") or ""
+    m.level = int(request.form.get("level") or 1)
+    m.xp_reward = int(request.form.get("xp_reward") or 0)
+    m.is_published = bool(request.form.get("is_published"))
+    db.session.commit()
+    flash("Módulo actualizado.", "success")
+    return redirect(url_for("admin.dashboard") + "#modules")
+
+
+@admin_bp.route("/modules/<int:module_id>/toggle", methods=["POST"])
+@login_required
+def module_toggle_publish_admin(module_id):
+    _ = request.form.get("csrf_token")
+    m = Modules.query.get_or_404(module_id)
+    m.is_published = not bool(m.is_published)
+    db.session.commit()
+    flash(("Publicado" if m.is_published else "Pasó a borrador") + ".", "success")
+    return redirect(request.referrer or (url_for("admin.dashboard") + "#modules"))
+
+
+@admin_bp.route("/modules/<int:module_id>/delete", methods=["POST"])
+@login_required
+def module_delete_admin(module_id):
+    _ = request.form.get("csrf_token")
+    m = Modules.query.get_or_404(module_id)
+    db.session.delete(m)
+    db.session.commit()
+    flash("Módulo eliminado.", "success")
+    return redirect(url_for("admin.dashboard") + "#modules")
+
+# --------- ACTIVITIES (ADMIN) ----------
+@admin_bp.route("/activities/create", methods=["POST"])
+@login_required
+def activity_create_admin():
+    _ = request.form.get("csrf_token")
+    module_id = int(request.form.get("module_id") or 0)
+    if not module_id:
+        flash("Selecciona un módulo.", "error")
+        return redirect(url_for("admin.dashboard") + "#activities")
+
+    a = Activities(
+        module_id=module_id,
+        title=request.form.get("title") or "Actividad",
+        type=request.form.get("type") or "quiz",
+        max_points=int(request.form.get("max_points") or 0),
+        position=int(request.form.get("position") or 1),
+        attempt_limit=int(request.form.get("attempt_limit") or 0),
+        default_xp=int(request.form.get("default_xp") or 25),
+        is_published=bool(request.form.get("is_published")),
+        content_json=request.form.get("content_json") or None,
+    )
+    db.session.add(a)
+    db.session.commit()
+    flash("Actividad creada.", "success")
+    return redirect(url_for("admin.dashboard") + "#activities")
+
+
+@admin_bp.route("/activities/<int:activity_id>/update", methods=["POST"])
+@login_required
+def activity_update_admin(activity_id):
+    _ = request.form.get("csrf_token")
+    a = Activities.query.get_or_404(activity_id)
+    a.title = request.form.get("title") or a.title
+    a.type = request.form.get("type") or a.type
+    a.max_points = int(request.form.get("max_points") or 0)
+    a.position = int(request.form.get("position") or 1)
+    a.attempt_limit = int(request.form.get("attempt_limit") or 0)
+    a.default_xp = int(request.form.get("default_xp") or 25)
+    a.is_published = bool(request.form.get("is_published"))
+    a.content_json = request.form.get("content_json") or None
+    db.session.commit()
+    flash("Actividad actualizada.", "success")
+    return redirect(url_for("admin.dashboard") + "#activities")
+
+
+@admin_bp.route("/activities/<int:activity_id>/toggle", methods=["POST"])
+@login_required
+def activity_toggle_publish_admin(activity_id):
+    _ = request.form.get("csrf_token")
+    a = Activities.query.get_or_404(activity_id)
+    a.is_published = not bool(a.is_published)
+    db.session.commit()
+    flash(("Publicada" if a.is_published else "Pasó a borrador") + ".", "success")
+    return redirect(request.referrer or (url_for("admin.dashboard") + "#activities"))
+
+
+@admin_bp.route("/activities/<int:activity_id>/delete", methods=["POST"])
+@login_required
+def activity_delete_admin(activity_id):
+    _ = request.form.get("csrf_token")
+    a = Activities.query.get_or_404(activity_id)
+    db.session.delete(a)
+    db.session.commit()
+    flash("Actividad eliminada.", "success")
+    return redirect(url_for("admin.dashboard") + "#activities")
+
