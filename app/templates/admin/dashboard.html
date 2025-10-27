@@ -1,131 +1,284 @@
-{% extends 'admin/layout.html' %} {% block admin_content %}
-<h1 class="text-xl font-semibold mb-4">Panel de administración</h1>
+{% extends 'admin/layout.html' %}
+{% block admin_content %}
 
+<h1 class="text-2xl font-bold mb-6">Panel de administración</h1>
+
+{# ===== KPIs ===== #}
 <div class="grid md:grid-cols-3 gap-4 mb-6">
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
-    <div class="text-sm text-slate-500">Disponibilidad</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ stats.availability_target }}
-    </div>
-    <div class="text-xs text-slate-500 mt-2">Objetivo de plataforma</div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Disponibilidad (última hora)</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ "%.1f%%"|format(stats.availability_pct) }}</div>
+    <div class="text-xs text-slate-500 mt-2">Códigos &lt; 500</div>
   </div>
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
-    <div class="text-sm text-slate-500">p95 (objetivo)</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ stats.p95_target }}
-    </div>
-    <div class="text-xs text-slate-500 mt-2">/student/dashboard</div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">p95 /student/dashboard</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.p95_ms }} ms</div>
+    <div class="text-xs text-slate-500 mt-2">Última hora</div>
   </div>
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
-    <div class="text-sm text-slate-500">Usuarios (online)</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ stats.total_users }}
-      <span class="text-sm text-slate-400">· {{ online }} online</span>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
+    <div class="text-sm text-slate-500">Usuarios</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">
+      {{ stats.total_users }} <span class="text-sm text-slate-400">· {{ online }} online</span>
     </div>
-    <div class="text-xs text-slate-500 mt-2">
-      {{ stats.students }} estudiantes · {{ stats.teachers }} docentes
-    </div>
+    <div class="text-xs text-slate-500 mt-2">{{ stats.students }} estudiantes · {{ stats.teachers }} docentes</div>
   </div>
 </div>
 
 <div class="grid md:grid-cols-3 gap-4 mb-10">
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
     <div class="text-sm text-slate-500">Módulos</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ stats.modules }}
-    </div>
-    <div class="text-xs text-slate-500 mt-2">
-      {{ stats.published }} publicados
-    </div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.modules }}</div>
+    <div class="text-xs text-slate-500 mt-2">{{ stats.published }} publicados</div>
   </div>
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
     <div class="text-sm text-slate-500">Actividades</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ stats.activities }}
-    </div>
-    <div class="text-xs text-slate-500 mt-2">Totales en el sistema</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.activities }}</div>
+    <div class="text-xs text-slate-500 mt-2">Totales</div>
   </div>
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
     <div class="text-sm text-slate-500">Intentos</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ stats.attempts }}
-    </div>
-    <div class="text-xs text-slate-500 mt-2">Histórico de prácticas</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.attempts }}</div>
+    <div class="text-xs text-slate-500 mt-2">Histórico</div>
   </div>
 </div>
 
-<div
-  class="bg-white dark:bg-slate-900 dark:text-slate-100 p-6 rounded-2xl shadow"
->
+{# ===== USUARIOS RECIENTES ===== #}
+<div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-6 rounded-2xl shadow mb-10">
   <div class="flex items-center justify-between">
     <h2 class="font-semibold">Usuarios recientes</h2>
-    <a
-      class="px-3 py-2 rounded bg-blue-600 text-white"
-      href="{{ url_for('admin.users_view') }}"
-      >Gestionar roles</a
-    >
+    <a class="px-3 py-2 rounded bg-emerald-600 text-white" href="{{ url_for('admin.users_view') }}">Gestionar roles</a>
   </div>
   <table class="mt-3 w-full text-sm">
-    <thead>
-      <tr class="text-left">
-        <th>Nombre</th>
-        <th>Email</th>
-        <th>Rol</th>
-        <th>Creado</th>
-      </tr>
-    </thead>
+    <thead><tr class="text-left"><th>Nombre</th><th>Email</th><th>Rol</th><th>Creado</th></tr></thead>
     <tbody>
       {% for u in recent_users %}
       <tr class="border-t border-slate-200 dark:border-slate-700">
-        <td>{{ u.name }}</td>
-        <td>{{ u.email }}</td>
-        <td>{{ u.role }}</td>
+        <td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td>
         <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+
+{# ===== GESTIÓN DE MÓDULOS ===== #}
+<a id="modules"></a>
+<section class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-10">
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <h2 class="font-semibold">Módulos</h2>
+
+    <details class="rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 max-w-full">
+      <summary class="cursor-pointer font-medium">➕ Crear módulo (rápido)</summary>
+      <form method="post" action="{{ url_for('admin.module_create_admin') }}"
+            class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="text-sm">Título
+          <input class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="title" placeholder="Ej. Budgeting básico" required>
+        </label>
+        <label class="text-sm">Nivel
+          <input class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="level" placeholder="1" inputmode="numeric">
+        </label>
+        <label class="text-sm">XP base
+          <input class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="xp_reward" placeholder="100" inputmode="numeric">
+        </label>
+        <label class="text-sm flex items-center gap-2 mt-6 sm:mt-8 lg:mt-0"><input type="checkbox" name="is_published"> Publicar ahora</label>
+        <label class="text-sm sm:col-span-2 lg:col-span-4">Resumen
+          <textarea class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="summary" placeholder="¿Qué aprenderán?"></textarea>
+        </label>
+        <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-between gap-3">
+          <p class="text-xs text-slate-500 dark:text-slate-400">Luego podrás añadir la lección y el quiz visual.</p>
+          <button class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Crear módulo</button>
+        </div>
+      </form>
+    </details>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-5 mt-5">
+    {% for m in modules %}
+    <div class="rounded-xl bg-white/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="font-semibold truncate">{{ m.title }}</div>
+          <div class="mt-0.5 flex items-center gap-2 text-xs">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full border {{ 'text-emerald-300 border-emerald-600/50 bg-emerald-700/20' if m.is_published else 'text-amber-200 border-amber-500/50 bg-amber-700/20' }}">
+              {{ 'Publicado' if m.is_published else 'Borrador' }}
+            </span>
+            {% if m.level %}<span class="opacity-80">· Nivel {{ m.level }}</span>{% endif %}
+            {% if m.xp_reward %}<span class="opacity-80">· +{{ m.xp_reward }} XP</span>{% endif %}
+          </div>
+          {% if m.summary %}<p class="mt-2 text-sm opacity-80 line-clamp-2">{{ m.summary }}</p>{% endif %}
+        </div>
+
+        <div class="shrink-0 flex flex-col items-end gap-2">
+          <form method="post" action="{{ url_for('admin.module_toggle_publish_admin', module_id=m.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if m.is_published %}
+            <button class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-100 text-sm">Despublicar</button>
+            {% else %}
+            <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-sm">Publicar</button>
+            {% endif %}
+          </form>
+          <form method="post" action="{{ url_for('admin.module_delete_admin', module_id=m.id) }}"
+                onsubmit="return confirm('¿Eliminar módulo \"{{ m.title }}\"?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm">Eliminar</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3">
+        <a href="{{ url_for('teacher.lesson_builder', module_id=m.id) }}"
+           class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white">+ Lección (visual)</a>
+        <a href="{{ url_for('teacher.quiz_new', module_id=m.id) }}"
+           class="px-4 py-2 rounded-xl bg-emerald-700/90 hover:bg-emerald-600 text-white">+ Quiz (visual)</a>
+
+        <details class="w-full">
+          <summary class="cursor-pointer text-emerald-300 text-sm">Editar meta</summary>
+          <form method="post" action="{{ url_for('admin.module_update_admin', module_id=m.id) }}"
+                class="mt-3 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="text-sm">Título
+              <input class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="title" value="{{ m.title }}" required>
+            </label>
+            <label class="text-sm">Nivel
+              <input class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="level" value="{{ m.level or '' }}" inputmode="numeric">
+            </label>
+            <label class="text-sm">XP base
+              <input class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="xp_reward" value="{{ m.xp_reward or '' }}" inputmode="numeric">
+            </label>
+            <label class="text-sm flex items-center gap-2 mt-6 sm:mt-8 lg:mt-0">
+              <input type="checkbox" name="is_published" {{ 'checked' if m.is_published else '' }}> Publicado
+            </label>
+            <label class="text-sm sm:col-span-2 lg:col-span-4">Resumen
+              <textarea class="mt-1 w-full px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="summary">{{ m.summary or '' }}</textarea>
+            </label>
+            <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+              <button class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Guardar cambios</button>
+            </div>
+          </form>
+        </details>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-slate-400">No hay módulos.</div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ===== GESTIÓN DE ACTIVIDADES ===== #}
+<a id="activities"></a>
+<section class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 mb-10">
+  <div class="flex items-center justify-between">
+    <h2 class="font-semibold">Actividades</h2>
+
+    <details class="rounded-xl px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+      <summary class="cursor-pointer">➕ Crear actividad</summary>
+      <form method="post" action="{{ url_for('admin.activity_create_admin') }}" class="mt-4 grid md:grid-cols-2 gap-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="module_id" required>
+          <option value="">Selecciona módulo</option>
+          {% for m in modules %}<option value="{{ m.id }}">{{ m.title }}</option>{% endfor %}
+        </select>
+        <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="title" placeholder="Título" required>
+        <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="type" value="quiz" placeholder="Tipo (quiz, scenario...)">
+        <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="max_points" placeholder="Puntos máx. (ej. 100)">
+        <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="position" placeholder="Orden (ej. 1)">
+        <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="attempt_limit" placeholder="Attempt limit (e.g., 3)">
+        <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="default_xp" value="25" placeholder="Default XP (e.g., 25)">
+        <label class="text-sm flex items-center gap-2"><input type="checkbox" name="is_published"> Publicada</label>
+        <textarea class="md:col-span-2 px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="content_json" placeholder="Contenido JSON (opcional)"></textarea>
+        <div class="md:col-span-2"><button class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Crear</button></div>
+      </form>
+    </details>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-5 mt-5">
+    {% for a in recent_activities %}
+    <div class="rounded-xl bg-white/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-5 space-y-3">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="font-semibold">{{ a.title }}</div>
+          <div class="text-xs opacity-80">Tipo {{ a.type }} · Puntos {{ a.max_points or 0 }}</div>
+        </div>
+        <div class="flex flex-col items-end gap-2">
+          <form method="post" action="{{ url_for('admin.activity_toggle_publish_admin', activity_id=a.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="px-3 py-1.5 rounded-lg {{ 'bg-emerald-600 text-white' if not a.is_published else 'bg-slate-800 text-slate-100' }}">
+              {{ 'Publicar' if not a.is_published else 'Despublicar' }}
+            </button>
+          </form>
+          <a href="{{ url_for('teacher.activity_results', activity_id=a.id) }}" class="px-3 py-1.5 rounded-lg border dark:border-slate-600 text-sm">
+            Resultados
+          </a>
+        </div>
+      </div>
+
+      <details class="mt-1">
+        <summary class="cursor-pointer text-emerald-300 text-sm">Editar</summary>
+        <form method="post" action="{{ url_for('admin.activity_update_admin', activity_id=a.id) }}"
+              class="mt-3 grid md:grid-cols-2 gap-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="title" value="{{ a.title }}">
+          <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="type" value="{{ a.type }}">
+          <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="max_points" value="{{ a.max_points or '' }}">
+          <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="position" value="{{ a.position or '' }}">
+          <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="attempt_limit" value="{{ a.attempt_limit or '' }}" placeholder="Attempt limit">
+          <input class="px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="default_xp" value="{{ a.default_xp or '' }}" placeholder="Default XP">
+          <label class="text-sm flex items-center gap-2">
+            <input type="checkbox" name="is_published" {{ 'checked' if a.is_published else '' }}> Publicada
+          </label>
+          <textarea class="md:col-span-2 px-3 py-2 rounded dark:bg-slate-950 border dark:border-slate-700" name="content_json">{{ a.content_json or '' }}</textarea>
+          <div class="md:col-span-2"><button class="px-4 py-2 rounded-lg bg-emerald-600 text-white">Guardar</button></div>
+        </form>
+
+        <form method="post" action="{{ url_for('admin.activity_delete_admin', activity_id=a.id) }}"
+              onsubmit="return confirm('¿Eliminar actividad?')" class="mt-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="px-3 py-2 rounded-lg bg-red-600 text-white">Eliminar</button>
+        </form>
+      </details>
+    </div>
+    {% else %}
+    <div class="text-slate-400">No hay actividades.</div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ===== SETTINGS RESUMEN ===== #}
 {% if settings %}
 <div class="grid md:grid-cols-3 gap-4 mb-10">
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
+  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl card">
     <div class="text-sm text-slate-500">XP Base</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ settings.xp_base }}
-    </div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ settings.xp_base }}</div>
     <div class="text-xs text-slate-500 mt-2">Usado para subir de nivel</div>
   </div>
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
+  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl card">
     <div class="text-sm text-slate-500">XP Growth</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ settings.xp_growth }}
-    </div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ settings.xp_growth }}</div>
     <div class="text-xs text-slate-500 mt-2">Incremento por nivel</div>
   </div>
-  <div
-    class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card"
-  >
+  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl card">
     <div class="text-sm text-slate-500">Attempts (default)</div>
-    <div class="text-2xl font-semibold text-emerald-700 mt-1">
-      {{ settings.max_attempts_default }}
-    </div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ settings.max_attempts_default }}</div>
     <div class="text-xs text-slate-500 mt-2">Límite por actividad</div>
   </div>
 </div>
-{% endif %} {% endblock %}
+{% endif %}
+
+{# ===== ATAJOS AL DATA BROWSER (todas las tablas) ===== #}
+<section class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="font-semibold">Data Browser</h2>
+    <a class="px-3 py-2 rounded border dark:border-slate-700" href="{{ url_for('admin.data_home') }}">Ver todo</a>
+  </div>
+  <ul class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    {% for key, Model in ALLOWED_MODELS.items() %}
+    <li>
+      <a class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
+         href="{{ url_for('admin.data_table', model=key) }}">{{ key|replace('_',' ')|title }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% endblock %}
