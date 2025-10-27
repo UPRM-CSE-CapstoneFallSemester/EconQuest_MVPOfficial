@@ -39,9 +39,9 @@
   <!-- Notas:
        - En la landing (main.index) quitamos paddings para que el hero ocupe toda la pantalla.
        - Ocultamos flashes en landing para no romper la animación. -->
-    <main id="main" class="{% if request.endpoint == 'main.index' or request.blueprint in ['auth','admin'] %}p-0{% else %}max-w-6xl mx-auto px-4 py-6{% endif %}">
+    <main id="main" class="{% if request.endpoint == 'main.index' or request.blueprint in ['auth','admin','teacher','student'] %}p-0{% else %}max-w-6xl mx-auto px-4 py-6{% endif %}">
       {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages and (request.endpoint != 'main.index' and request.blueprint not in ['auth','admin']) %}
+        {% if messages and (request.endpoint != 'main.index' and request.blueprint not in ['auth','admin','teacher','student']) %}
           <div class="max-w-6xl mx-auto px-4 mt-4">
             <div class="space-y-2 mb-4">
               {% for category, msg in messages %}
