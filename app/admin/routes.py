@@ -429,6 +429,7 @@ def settings_view():
     # Render
     return render_template("admin/settings.html", settings=settings)
 
+'''
 # --------- MODULES (ADMIN) ----------
 @admin_bp.route("/modules/create", methods=["POST"])
 @login_required
@@ -553,4 +554,4 @@ def activity_delete_admin(activity_id):
     db.session.commit()
     flash("Actividad eliminada.", "success")
     return redirect(url_for("admin.dashboard") + "#activities")
-
+'''
