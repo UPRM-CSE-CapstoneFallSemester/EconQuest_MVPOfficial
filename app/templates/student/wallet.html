@@ -1,0 +1,93 @@
+{% extends 'student/layout.html' %} {% block student_content %}
+
+<h1 class="text-3xl font-bold mb-8 text-white">{{ title }}</h1>
+
+<div class="space-y-10">
+  <header class="mb-4"></header>
+
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div
+      class="bg-slate-900/60 py-6 px-8 rounded-2xl shadow-xl border border-emerald-700/50 col-span-1 md:col-span-2"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-emerald-400">
+          Saldo de Efectivo Actual
+        </h2>
+        <span class="text-4xl font-extrabold text-white">
+          {% if profile and profile.cash_balance is defined %}
+          <span class="text-emerald-400">$</span>{{
+          "{:,}".format(profile.cash_balance) }} {% else %}
+          <span class="text-emerald-400">$</span>0 {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div
+      class="bg-slate-900/60 py-6 px-8 rounded-2xl shadow-xl border border-green-700/50"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-green-400">
+          Ingresos (Total Ganado)
+        </h2>
+        <span class="text-4xl font-extrabold text-white">
+          {% if budget and budget.income is defined %}
+          <span class="text-emerald-400">$</span>{{ "{:,}".format(budget.income)
+          }} {% else %} <span class="text-emerald-400">$</span>0 {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div
+      class="bg-slate-900/60 py-6 px-8 rounded-2xl shadow-xl border border-red-700/50"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-red-400">
+          Gastos (Total Consumido)
+        </h2>
+        <span class="text-4xl font-extrabold text-white">
+          {% if budget and budget.expenses is defined %}
+          <span class="text-emerald-400">$</span>{{
+          "{:,}".format(budget.expenses) }} {% else %}
+          <span class="text-emerald-400">$</span>0 {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <div class="md:col-span-2"></div>
+  </section>
+
+  <section>
+    <h2 class="text-2xl font-bold text-white mb-5">
+      Historial de Transacciones 🧾
+    </h2>
+
+    <div
+      class="bg-white/5 dark:bg-slate-900/60 dark:text-slate-100 rounded-2xl p-0 border border-slate-800 overflow-hidden"
+    >
+      {% if transactions %}
+      <ul class="divide-y divide-emerald-800/30">
+        {% for tx in transactions %}
+        <li
+          class="py-5 px-6 flex justify-between items-center hover:bg-emerald-900/20 transition duration-150"
+        >
+          <span class="text-slate-300"> {{ tx.description }} </span>
+          <span
+            class="font-bold {{ 'text-green-400' if tx.amount > 0 else 'text-red-400' }}"
+          >
+            <span class="text-emerald-400">$</span>{{ "{:+,}".format(tx.amount)
+            }}
+            <span class="text-emerald-400">Coins</span>
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-slate-400 p-6 text-center">
+        No hay transacciones recientes para mostrar.
+      </p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% endblock student_content %}

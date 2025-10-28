@@ -29,8 +29,8 @@ def _ensure_profile(u):
     # ya lo tienes en otras vistas; lo reutilizamos
     if not getattr(u, "profile", None):
         from app import db
-        from app.models import StudentProfiles
-        p = StudentProfiles(
+        from app.models import StudentProfile
+        p = StudentProfile(
             user_id=u.id,
             credit_score=620,
             cash_balance=500,
@@ -79,11 +79,14 @@ def dashboard():
     Student dashboard: muestra módulos asignados a los grupos del estudiante.
     Si no hay asignaciones, cae a módulos publicados. También lista actividades de esos módulos.
     """
-    # --- 1) grupos del estudiante ---
+    # --- 1) Asegura perfil del estudiante ---
+    profile = _ensure_profile(current_user)
+
+    # --- 2) grupos del estudiante ---
     my_memberships = GroupMembers.query.filter_by(user_id=current_user.id).all()
     group_ids = [m.group_id for m in my_memberships]
 
-    # --- 2) módulos asignados a esos grupos ---
+    # --- 3) módulos asignados a esos grupos ---
     assigned_module_ids = []
     if group_ids:
         assigned_module_ids = [
@@ -93,21 +96,19 @@ def dashboard():
                 .all()
         ]
 
-    # --- 3) query de módulos a mostrar ---
+    # --- 4) query de módulos a mostrar ---
     q = Modules.query
     if assigned_module_ids:
         q = q.filter(Modules.id.in_(assigned_module_ids))
     else:
-        # fallback: publicados (o null)
         q = q.filter((Modules.is_published == True) | (Modules.is_published.is_(None)))
 
-    # Orden seguro en SQLite: usa COALESCE para nulls primero/último
     modules = q.order_by(
         db.func.coalesce(Modules.level, 9999).asc(),
         Modules.id.desc()
     ).all()
 
-    # --- 4) actividades de esos módulos (solo publicadas) ---
+    # --- 5) actividades de esos módulos ---
     activities = []
     if modules:
         mids = [m.id for m in modules]
@@ -120,7 +121,14 @@ def dashboard():
             .all()
         )
 
-    return render_template("student/dashboard.html", modules=modules, activities=activities)
+    # --- 6) Renderiza dashboard ---
+    return render_template(
+        "student/dashboard.html",
+        student=current_user,
+        profile=profile,
+        modules=modules,
+        activities=activities,
+    )
 
 @student_bp.route("/missions")
 @login_required
@@ -132,7 +140,7 @@ def missions():
 @login_required
 def wallet():
     profile = _ensure_profile(current_user)
-    return render_template("student/placeholder.html", title="Billetera", profile=profile)
+    return render_template("student/wallet.html", title="Wallet", profile=profile)
 
 @student_bp.route("/badges")
 @login_required
@@ -154,9 +162,9 @@ def help_page():
 
 
 def _get_or_create_profile(user_id):
-    prof = StudentProfiles.query.filter_by(user_id=user_id).first()
+    prof = StudentProfile.query.filter_by(user_id=user_id).first()
     if not prof:
-        prof = StudentProfiles(user_id=user_id)
+        prof = StudentProfile(user_id=user_id)
         db.session.add(prof)
         db.session.commit()
     return prof
@@ -196,9 +204,9 @@ def play_activity(activity_id):
         return redirect(url_for("student_ui.play_activity", activity_id=a.id))
 
     if flask_request.method == "POST":
-        profile = StudentProfiles.query.filter_by(user_id=current_user.id).first()
+        profile = StudentProfile.query.filter_by(user_id=current_user.id).first()
         if not profile:
-            profile = StudentProfiles(user_id=current_user.id)
+            profile = StudentProfile(user_id=current_user.id)
             db.session.add(profile)
 
         score = 0
