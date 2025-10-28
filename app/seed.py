@@ -3,7 +3,7 @@ from . import db
 from .models import (
     Users, Modules, Activities,
     ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT,
-    StudentProfile, GameSettings
+    StudentProfiles, GameSettings
 )
 
 def ensure_student_profile(email, **kwargs):
@@ -11,7 +11,7 @@ def ensure_student_profile(email, **kwargs):
     if not u:
         return
     if not u.profile:
-        sp = StudentProfile(user_id=u.id, **kwargs)
+        sp = StudentProfiles(user_id=u.id, **kwargs)
         db.session.add(sp)
         db.session.commit()
 
