@@ -1,19 +1,81 @@
  {% extends 'student/layout.html' %}
 {% block student_content %}
 
+
 <style>
-  .burst {
-    display:inline-block; padding:.35rem .7rem; border-radius:9999px;
-    background: rgba(16,185,129,.18); border:1px solid rgba(16,185,129,.5);
-    color:#d1fae5; font-weight:700;
-    animation: pop .9s ease both;
+  /* Match dark theme background */
+  body, main, .content, .page-bg {
+    background: #041b15 !important;
   }
-  @keyframes pop {
-    0% { transform: translateY(12px) scale(.9); opacity:0; }
-    40% { transform: translateY(-4px) scale(1.04); opacity:1; }
-    100% { transform: translateY(0) scale(1); opacity:1; }
+
+  .result-wrap {
+    color: #e6f7f1;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .result-card {
+    background: linear-gradient(180deg, rgba(11,47,40,.95), rgba(7,28,26,.95));
+    border: 1px solid rgba(16,185,129,.25);
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 12px 36px rgba(0,0,0,.45), inset 0 0 30px rgba(16,185,129,.06);
+  }
+
+  .result-title {
+    color: #d6fff4;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .result-msg {
+    font-size: 1rem;
+    color: #a7c6be;
+    margin-bottom: 1rem;
+  }
+
+  .result-xp {
+    color: #10b981;
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-dash {
+    display: inline-block;
+    background: #10b981;
+    color: #06281f;
+    font-weight: 700;
+    padding: 0.6rem 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 18px rgba(16,185,129,.25);
+    text-decoration: none;
+    transition: all .15s ease;
+  }
+  .btn-dash:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow: 0 10px 24px rgba(16,185,129,.35);
   }
 </style>
+
+<div class="result-wrap space-y-6">
+  <h1 class="result-title">{{ activity.title }}</h1>
+
+  <div class="result-card">
+    <p class="result-msg">Submitted! Your stats changed:</p>
+    {% if xp_gain %}
+      <div class="result-xp">+{{ xp_gain }} XP</div>
+    {% else %}
+      <div class="result-xp">+100 XP</div>
+    {% endif %}
+    <a href="{{ url_for('student_ui.dashboard') }}" class="btn-dash">Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}
+
 
 <div class="max-w-2xl mx-auto text-emerald-100">
   <h1 class="text-2xl font-bold text-emerald-300">{{ activity.title }}</h1>
@@ -49,4 +111,3 @@
   });
 </script>
 
-{% endblock %}

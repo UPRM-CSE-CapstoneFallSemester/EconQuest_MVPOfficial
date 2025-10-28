@@ -5,6 +5,7 @@ from app.models import Users, Modules, Activities, GameSettings
 from app.models import Groups, ModuleAssignments
 from functools import wraps
 from app.models import Users, Groups, GroupMembers
+from json import loads as _json_loads
 
 teacher_bp = Blueprint("teacher", __name__, template_folder="../templates/teacher")
 
@@ -115,28 +116,46 @@ def module_delete(module_id):
 @login_required
 def activity_create():
     _require_teacher()
-    module_id = request.form.get("module_id")
-    title = request.form.get("title", "").strip()
-    act_type = request.form.get("type", "quiz").strip()
-    max_points = request.form.get("max_points")
-    position = request.form.get("position")
-    is_published = True if request.form.get("is_published") == "on" else False
-    content_json = request.form.get("content_json")  # json string
 
+    # Read & normalize inputs
+    module_id     = request.form.get("module_id", type=int)
+    title         = (request.form.get("title") or "").strip()
+    act_type      = (request.form.get("type") or "quiz").strip()   # <— usar "type" del form
+    max_points    = request.form.get("max_points", type=int)
+    position      = request.form.get("position", type=int)
+    is_published  = bool(request.form.get("is_published"))
+    content_json  = request.form.get("content_json") or None
     attempt_limit = request.form.get("attempt_limit", type=int)
-    default_xp = request.form.get("default_xp", type=int)
+    default_xp    = request.form.get("default_xp", type=int)
+
+    # Basic guards
+    if not module_id:
+        flash("Module is required.", "error")
+        return redirect(url_for("teacher.dashboard") + "#activities")
+    if not title:
+        flash("Title is required.", "error")
+        return redirect(url_for("teacher.dashboard") + "#activities")
+
+    # Optional: validate JSON shape syntactically (won't block if empty)
+    if content_json:
+        try:
+            _json_loads(content_json)
+        except Exception:
+            flash("Content JSON is invalid.", "error")
+            return redirect(url_for("teacher.dashboard") + "#activities")
+
     a = Activities(
         module_id=module_id,
         title=title,
-        type=atype or "quiz",
+        type=act_type,                      # <— corregido
         max_points=max_points,
         position=position,
-        is_published=bool(is_published),
-        content_json=content_json or None,
+        is_published=is_published,
+        content_json=content_json,
         attempt_limit=attempt_limit,
         default_xp=default_xp,
     )
-    db.session.add(a);
+    db.session.add(a)
     db.session.commit()
     flash("Activity created.", "success")
     return redirect(url_for("teacher.dashboard") + "#activities")
@@ -147,19 +166,29 @@ def activity_create():
 def activity_update(activity_id):
     _require_teacher()
     a = Activities.query.get_or_404(activity_id)
-    a.title = request.form.get("title", a.title).strip()
-    a.type = request.form.get("type", a.type).strip()
-    a.max_points = int(request.form.get("max_points")) if request.form.get("max_points") else a.max_points
-    a.position = int(request.form.get("position")) if request.form.get("position") else a.position
-    a.is_published = True if request.form.get("is_published") == "on" else False
+
+    # Helpers to keep current value if the field comes vacío
+    def _int_or(old, field):
+        raw = request.form.get(field)
+        if raw is None or str(raw).strip() == "":
+            return old
+        try:
+            return int(raw)
+        except Exception:
+            return old
+
+    a.title        = (request.form.get("title") or a.title).strip()
+    a.type         = (request.form.get("type")  or a.type).strip()
+    a.max_points   = _int_or(a.max_points, "max_points")
+    a.position     = _int_or(a.position, "position")
+    a.is_published = bool(request.form.get("is_published"))
     a.content_json = request.form.get("content_json") or a.content_json
-    a.attempt_limit = request.form.get("attempt_limit", type=int)
-    a.default_xp = request.form.get("default_xp", type=int)
-    # (keep the rest: title/type/max_points/position/is_published/content_json)
+    a.attempt_limit= _int_or(a.attempt_limit, "attempt_limit")
+    a.default_xp   = _int_or(a.default_xp, "default_xp")
+
     db.session.commit()
     flash("Activity updated.", "success")
     return redirect(url_for("teacher.dashboard") + "#activities")
-
 
 @teacher_bp.post("/activities/<int:activity_id>/delete")
 @login_required

@@ -103,7 +103,7 @@ class AuthSession(db.Model):
         return int((self.salary_monthly or 0) / 30)
 
     def __repr__(self) -> str:
-        return f"<StudentProfile user={self.user_id} score={self.credit_score}>"
+        return f"<StudentProfiles user={self.user_id} score={self.credit_score}>"
 
 class ModuleProgress(db.Model):
     __tablename__ = "module_progress"
@@ -188,7 +188,7 @@ group_students = db.Table(
     db.UniqueConstraint("group_id", "student_id", name="uq_group_student")
 )
 
-class StudentProfile(db.Model):
+class StudentProfiles(db.Model):
     __tablename__ = "student_profiles"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
@@ -207,7 +207,7 @@ class StudentProfile(db.Model):
 
 # Relación 1–1 desde Users (si no la tienes ya)
 Users.profile = db.relationship(
-    "StudentProfile",
+    "StudentProfiles",
     uselist=False,
     backref="user",
     cascade="all, delete-orphan"
@@ -216,26 +216,38 @@ Users.profile = db.relationship(
 # app/models.py
 from datetime import datetime
 from app import db
+# from sqlalchemy.orm import backref  # not needed if you use backref="group" as a string
+
 class Groups(db.Model):
     __tablename__ = "groups"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(160), nullable=False)
-    teacher_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"))
-    grade = db.Column(db.String(20))  # optional
 
-    # --- relaciones útiles para el dashboard ---
-    # miembros (fila en tabla puente)
-    members = db.relationship(
-        "GroupMembers",
-        backref=backref("group"),
-        cascade="all, delete-orphan",
-        lazy="joined",   # puedes usar "select" si prefieres
+    # IMPORTANT: map the real column name in the DB
+    grade_level = db.Column(db.String(20))  # ← matches schema; replaces the old "grade" column
+
+    # Optional columns that exist in your schema (safe to include)
+    section = db.Column(db.String(10))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    teacher_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False
     )
 
-    # asignaciones de módulos al grupo (si ya tienes esta tabla)
+    # --- relaciones útiles para el dashboard ---
+    members = db.relationship(
+        "GroupMembers",
+        backref="group",              # use a plain string; no need to import backref()
+        cascade="all, delete-orphan",
+        lazy="joined",
+    )
+
     module_assignments = db.relationship(
         "ModuleAssignments",
-        backref=backref("group"),
+        backref="group",
         cascade="all, delete-orphan",
         lazy="select",
     )
@@ -245,6 +257,10 @@ class Groups(db.Model):
         """Devuelve una lista de Users (estudiantes) en el grupo."""
         return [m.user for m in self.members]
 
+    # Backwards-compatibility: allow templates/code that still read .grade
+    @property
+    def grade(self):
+        return self.grade_level
 
 class GroupMembers(db.Model):
     __tablename__ = "group_members"
