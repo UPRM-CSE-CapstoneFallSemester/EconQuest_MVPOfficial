@@ -1,17 +1,10 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
-  .auth-bg{
-    position: relative; overflow: hidden;
-    min-height: calc(100vh - 56px);
-    background: radial-gradient(60% 80% at 50% 0%, #0b775e 0%, #066a55 40%, #055244 70%, #062a22 100%);
-  }
-  .auth-card{
-    background: rgba(255,255,255,.9);
-    backdrop-filter: blur(6px);
-    border-radius: 18px;
-    box-shadow: 0 25px 60px rgba(0,0,0,.25);
-  }
+  .auth-bg{ position: relative; overflow: hidden; min-height: calc(100vh - 56px);
+    background: radial-gradient(60% 80% at 50% 0%, #0b775e 0%, #066a55 40%, #055244 70%, #062a22 100%); }
+  .auth-card{ background: rgba(255,255,255,.9); backdrop-filter: blur(6px); border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.25); }
 </style>
 
 <div class="auth-bg grid place-items-center px-4 py-10">
@@ -21,24 +14,80 @@
     <h1 class="text-2xl font-extrabold text-slate-800 text-center">EconQuest</h1>
     <p class="text-center text-slate-600 mt-1">Create your account</p>
 
-    <form method="post" class="mt-6 grid sm:grid-cols-2 gap-4">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        <div class="space-y-2 mt-4">
+          {% for cat, msg in messages %}
+            <div class="px-4 py-3 rounded-lg text-sm border
+                        {% if cat == 'error' %} bg-red-50 text-red-700 border-red-200
+                        {% elif cat == 'warning' %} bg-amber-50 text-amber-800 border-amber-200
+                        {% else %} bg-emerald-50 text-emerald-800 border-emerald-200
+                        {% endif %}">
+              {{ msg }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" class="mt-6 grid sm:grid-cols-2 gap-4" novalidate>
+      {{ form.hidden_tag() }}
+
       <label class="text-sm text-slate-700 sm:col-span-2">Full name
-        <input name="name" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Your name" required>
+        <input name="name"
+               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               placeholder="Your name"
+               value="{{ form.name.data or '' }}"
+               required>
+        {% if form.name.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.name.errors[0] }}</p>
+        {% endif %}
       </label>
+
       <label class="text-sm text-slate-700 sm:col-span-2">Email
-        <input name="email" type="email" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="you@example.com" required>
+        <input name="email" type="email"
+               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               placeholder="you@example.com"
+               value="{{ form.email.data or '' }}"
+               required>
+        {% if form.email.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.email.errors[0] }}</p>
+        {% endif %}
       </label>
+
       <label class="text-sm text-slate-700">Password
-        <input name="password" type="password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Min 6 characters" required>
+        <input name="password" type="password"
+               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               placeholder="Min 8, 1 letra y 1 número"
+               required>
+        {% if form.password.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.password.errors[0] }}</p>
+        {% endif %}
       </label>
+
       <label class="text-sm text-slate-700">Confirm password
-        <input name="confirm" type="password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Repeat password" required>
+        <input name="confirm" type="password"
+               class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               placeholder="Repeat password"
+               required>
+        {% if form.confirm.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ form.confirm.errors[0] }}</p>
+        {% endif %}
       </label>
+
+      {# Errores de CSRF si expiró el token #}
+      {% if form.csrf_token.errors %}
+        <div class="sm:col-span-2">
+          <p class="text-xs text-red-600 mt-1">{{ form.csrf_token.errors[0] }}</p>
+        </div>
+      {% endif %}
 
       <div class="sm:col-span-2 flex items-center justify-between">
         <a class="text-emerald-700 hover:underline text-sm" href="{{ url_for('auth.login') }}">Already have an account? Sign in</a>
-        <button class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 font-medium">Create account</button>
+        <button type="submit" class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 font-medium">
+          Create account
+        </button>
       </div>
     </form>
   </div>

@@ -27,6 +27,20 @@ class Users(UserMixin, db.Model):
 def load_user(user_id: str) -> Optional["Users"]:
     return Users.query.get(int(user_id))
 
+# --- Lightweight request metrics (for admin dashboard) ---
+class RequestLog(db.Model):
+    __tablename__ = "request_log"
+    id = db.Column(db.Integer, primary_key=True)
+    method = db.Column(db.String(8), nullable=False)
+    path = db.Column(db.String(180), nullable=False, index=True)
+    status_code = db.Column(db.Integer, nullable=False)
+    duration_ms = db.Column(db.Integer, nullable=False)  # rounded ms
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self):
+        return f"<RequestLog {self.method} {self.path} {self.status_code} {self.duration_ms}ms>"
+
+
 class Classes(db.Model):
     __tablename__ = "classes"
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +68,11 @@ class Attempts(db.Model):
     answers_json = db.Column(db.Text, nullable=False, default="{}")
     started_at = db.Column(db.DateTime, default=datetime.utcnow)
     ended_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship("Users", lazy="joined")
+    activity = db.relationship("Activities", lazy="joined")
+
+
 
 
 class ScoreEvents(db.Model):
@@ -129,11 +148,13 @@ class ActivityState(db.Model):
 class Modules(db.Model):
     __tablename__ = "modules"
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(255))
     summary = db.Column(db.Text)
-    is_published = db.Column(db.Boolean)
+    is_published = db.Column(db.Boolean, default=False)
     level = db.Column(db.Integer)
     xp_reward = db.Column(db.Integer)
+    content_json = db.Column(db.Text)
+
 
     # 👇 one-to-many: a module has many activities
     activities = db.relationship(

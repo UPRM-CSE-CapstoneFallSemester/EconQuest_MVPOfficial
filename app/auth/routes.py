@@ -43,20 +43,60 @@ def _record_logout():
         s.logout_at = datetime.utcnow()
     db.session.commit()
 
-@auth_bp.route("/register", methods=["GET","POST"])
+def _redirect_by_role(user):
+    role = (user.role or "student").strip().lower()
+    if role == "admin":
+        return redirect(url_for("admin.dashboard"))
+    elif role == "teacher":
+        return redirect(url_for("teacher.dashboard"))
+    else:
+        return redirect(url_for("student_ui.dashboard"))
+
+@auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    if current_user.is_authenticated: return redirect(url_for("main.index"))
+    if current_user.is_authenticated:
+        return _redirect_by_role(current_user)
+
     form = RegisterForm()
+
     if form.validate_on_submit():
-        if Users.query.filter_by(email=form.email.data.lower()).first():
-            flash("Ese email ya está registrado.", "error")
+        email = form.email.data.strip().lower()
+        if Users.query.filter_by(email=email).first():
+            form.email.errors.append("Ese email ya está registrado.")
+            flash("No se pudo crear la cuenta. Corrige los campos marcados y vuelve a intentar.", "error")
             return render_template("auth/register.html", form=form)
-        user = Users(name=form.name.data.strip(), email=form.email.data.lower(),
-                     role=ROLE_STUDENT, locale="es")
+
+        # Crear y auto-login
+        user = Users(
+            name=form.name.data.strip(),
+            email=email,
+            role=ROLE_STUDENT,
+            locale="es",
+        )
         user.set_password(form.password.data)
-        db.session.add(user); db.session.commit()
-        flash("Cuenta creada. Ahora puedes iniciar sesión.", "success")
-        return redirect(url_for("auth.login"))
+        db.session.add(user)
+        db.session.commit()
+
+        login_user(user, remember=False)
+        try:
+            _record_login(user)  # si tienes esta función
+        except Exception:
+            pass
+
+        flash("¡Cuenta creada y sesión iniciada!", "success")
+        return _redirect_by_role(user)
+
+    # POST pero inválido: explica por qué
+    if request.method == "POST":
+        reasons = []
+        for field in (form.name, form.email, form.password, form.confirm, form.csrf_token):
+            for err in field.errors:
+                reasons.append(f"{field.label.text}: {err}")
+        if reasons:
+            flash("No se pudo crear la cuenta. " + " | ".join(reasons), "error")
+        else:
+            flash("No se pudo crear la cuenta. Revisa los campos.", "error")
+
     return render_template("auth/register.html", form=form)
 
 

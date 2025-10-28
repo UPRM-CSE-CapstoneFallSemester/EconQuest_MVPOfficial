@@ -8,6 +8,7 @@ from ..models import (
     Users, Modules, Activities, Attempts, AuthSession, db,
     ROLE_ADMIN, ROLE_TEACHER, ROLE_STUDENT
 )
+from sqlalchemy import and_
 
 try:
     from ..models import Groups, GroupMembers, ModuleAssignments
@@ -41,6 +42,31 @@ try:
 except Exception:
     GameSettings = None
 
+# --- imports arriba del archivo (añade si faltan) ---
+from sqlalchemy import and_
+
+# intenta traer tablas opcionales para el Data Browser
+try:
+    from ..models import Groups, GroupMembers, ModuleAssignments
+except Exception:
+    Groups = GroupMembers = ModuleAssignments = None
+
+try:
+    from ..models import UserProfile
+except Exception:
+    UserProfile = None
+
+try:
+    from ..models import GameSettings
+except Exception:
+    GameSettings = None
+
+try:
+    from ..models import RequestLog
+except Exception:
+    RequestLog = None
+
+
 ALLOWED_MODELS = {
     "users": Users,
     "modules": Modules,
@@ -50,6 +76,18 @@ ALLOWED_MODELS = {
 }
 if GameSettings:
     ALLOWED_MODELS["game_settings"] = GameSettings
+if Groups:
+    ALLOWED_MODELS["groups"] = Groups
+if GroupMembers:
+    ALLOWED_MODELS["group_members"] = GroupMembers
+if ModuleAssignments:
+    ALLOWED_MODELS["module_assignments"] = ModuleAssignments
+if UserProfile:
+    ALLOWED_MODELS["user_profiles"] = UserProfile
+if RequestLog:
+    # Solo lectura de logs (no hay campos editables)
+    ALLOWED_MODELS["request_log"] = RequestLog
+
 
 # Helpers
 def is_admin() -> bool:
@@ -89,6 +127,7 @@ def guard():
 @admin_bp.route("/dashboard")
 @login_required
 def dashboard():
+    # --- existing counts ---
     total_users = Users.query.count()
     total_students = Users.query.filter_by(role=ROLE_STUDENT).count()
     total_teachers = Users.query.filter_by(role=ROLE_TEACHER).count()
@@ -98,6 +137,32 @@ def dashboard():
     activities_ct = Activities.query.count()
     attempts_ct = Attempts.query.count()
 
+    # --- NEW: live metrics (last 60 minutes) ---
+    from ..models import RequestLog  # local import to avoid circulars
+    window_start = datetime.utcnow() - timedelta(hours=1)
+
+    # availability = % of successful (status < 500) among all requests in window
+    total_reqs = RequestLog.query.filter(RequestLog.created_at >= window_start).count()
+    ok_reqs = RequestLog.query.filter(
+        and_(RequestLog.created_at >= window_start, RequestLog.status_code < 500)
+    ).count()
+    availability_pct = (ok_reqs / total_reqs * 100.0) if total_reqs else 100.0
+
+    # p95 for /student/dashboard (you can change the path if you prefer)
+    q = (RequestLog.query
+         .filter(and_(RequestLog.created_at >= window_start,
+                      RequestLog.path == "/student/dashboard",
+                      RequestLog.status_code < 500))
+         .with_entities(RequestLog.duration_ms)
+         .order_by(RequestLog.duration_ms.asc()))
+    durations = [r.duration_ms for r in q.all()]
+    if durations:
+        # simple percentile calc (no numpy): pick the 95th index
+        k = int(0.95 * (len(durations) - 1))
+        p95_ms = durations[k]
+    else:
+        p95_ms = 0
+
     stats = {
         "total_users": total_users,
         "students": total_students,
@@ -106,18 +171,33 @@ def dashboard():
         "published": published_mod,
         "activities": activities_ct,
         "attempts": attempts_ct,
-        "p95_target": "< 500 ms",
-        "availability_target": "99% objetivo",
+
+        # Replaces the hard-coded strings
+        "availability_pct": availability_pct,  # float
+        "p95_ms": p95_ms,                      # int milliseconds
     }
 
     cutoff = datetime.utcnow() - timedelta(minutes=2)
-    online = AuthSession.query.filter_by(active=True).filter(AuthSession.last_seen >= cutoff).count()
+    online = (AuthSession.query
+              .filter_by(active=True)
+              .filter(AuthSession.last_seen >= cutoff)
+              .count())
 
     recent_users = Users.query.order_by(Users.created_at.desc()).limit(8).all()
-
     settings = _get_settings()
-    return render_template("admin/dashboard.html",
-                           stats=stats, online=online, recent_users=recent_users, settings=settings)
+    modules = Modules.query.order_by(Modules.id.desc()).all()
+    recent_activities = Activities.query.order_by(Activities.id.desc()).limit(20).all()
+
+    return render_template(
+        "admin/dashboard.html",
+        stats=stats,
+        online=online,
+        recent_users=recent_users,
+        settings=settings,
+        modules=modules,
+        recent_activities=recent_activities,
+        ALLOWED_MODELS=ALLOWED_MODELS,
+    )
 
 
 # Live Sessions (vista + API)
@@ -344,6 +424,7 @@ def settings_view():
         except Exception:
             db.session.rollback()
             flash("No se pudo actualizar la configuración.", "error")
+
 
     # Render
     return render_template("admin/settings.html", settings=settings)
