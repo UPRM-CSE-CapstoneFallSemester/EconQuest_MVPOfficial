@@ -153,6 +153,7 @@ class Modules(db.Model):
     is_published = db.Column(db.Boolean, default=False)
     level = db.Column(db.Integer)
     xp_reward = db.Column(db.Integer)
+    content_json = db.Column(db.Text)
 
 
     # 👇 one-to-many: a module has many activities
@@ -180,6 +181,7 @@ class Activities(db.Model):
     type = db.Column(db.String(50), nullable=False)
     max_points = db.Column(db.Integer)
     is_published = db.Column(db.Boolean)
+    content_json = db.Column(db.Text)
 
     # new game fields (if you added them in a migration)
     attempt_limit = db.Column(db.Integer)   # nullable OK (will fallback to global default)
