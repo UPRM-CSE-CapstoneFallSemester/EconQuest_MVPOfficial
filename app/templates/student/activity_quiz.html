@@ -19,21 +19,37 @@
   {% else %}
     <form method="post" class="mt-4 space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      {% set questions = (content.questions or []) %}
+
+      {# Fallback seguro si no existe content.questions #}
+      {% set questions = (content.questions if content and content.questions is defined else []) %}
+
       {% for q in questions %}
         {% set q_idx = loop.index0 %}
         <div class="p-4 rounded-xl bg-emerald-900/30 border border-emerald-800/40">
-          <div class="font-semibold text-emerald-100">{{ loop.index }}. {{ q.text }}</div>
+          <div class="font-semibold text-emerald-100">
+            {{ loop.index }}.
+            {{ q.text or q.label or q.title or ('Pregunta ' ~ loop.index) }}
+          </div>
+
           <div class="mt-2 space-y-2">
-            {% for opt in q.options or [] %}
+            {% for opt in (q.options if q.options is defined else []) %}
               <label class="flex items-start gap-3 cursor-pointer">
-                <input type="radio" name="q{{ q_idx }}" value="{{ opt.key }}" required class="mt-1">
-                <div class="text-emerald-100">{{ opt.label }}</div>
+                <input
+                  type="radio"
+                  name="q{{ q_idx }}"
+                  value="{{ opt.key or opt.value or loop.index0 }}"
+                  required
+                  class="mt-1"
+                >
+                <div class="text-emerald-100">
+                  {{ opt.label or opt.text or opt.title or opt.value or ('Opción ' ~ loop.index) }}
+                </div>
               </label>
             {% endfor %}
           </div>
         </div>
       {% endfor %}
+
       <button class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white">Submit</button>
     </form>
   {% endif %}
