@@ -20,33 +20,82 @@
     <form method="post" class="mt-4 space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      {# Fallback seguro si no existe content.questions #}
-      {% set questions = (content.questions if content and content.questions is defined else []) %}
+      {# 1) Fallback robusto para encontrar las preguntas #}
+      {% set questions = (
+          content.get('questions')
+          or content.get('quiz', {}).get('questions')
+          or []
+      ) %}
 
       {% for q in questions %}
         {% set q_idx = loop.index0 %}
+
+        {# 2) Texto de la pregunta con múltiples llaves posibles #}
+        {% set q_text = (
+            (q.text if q is not string and q.text is defined else none)
+            or (q.get('text') if q.get is defined else none)
+            or (q.label if q is not string and q.label is defined else none)
+            or (q.get('label') if q.get is defined else none)
+            or (q.title if q is not string and q.title is defined else none)
+            or (q.get('title') if q.get is defined else none)
+            or ('Pregunta ' ~ loop.index)
+        ) %}
+
+        {# 3) Opciones: soporta 'options' o 'choices', objetos o strings #}
+        {% set opts = (
+            (q.options if q is not string and q.options is defined else none)
+            or (q.get('options') if q.get is defined else none)
+            or (q.get('choices') if q.get is defined else none)
+            or []
+        ) %}
+
         <div class="p-4 rounded-xl bg-emerald-900/30 border border-emerald-800/40">
           <div class="font-semibold text-emerald-100">
-            {{ loop.index }}.
-            {{ q.text or q.label or q.title or ('Pregunta ' ~ loop.index) }}
+            {{ loop.index }}. {{ q_text }}
           </div>
 
           <div class="mt-2 space-y-2">
-            {% for opt in (q.options if q.options is defined else []) %}
+            {% for opt in opts %}
+              {% if opt is string %}
+                {% set val = loop.index0 %}
+                {% set label = opt %}
+              {% else %}
+                {% set val = (
+                  (opt.key if opt.key is defined else none)
+                  or (opt.get('key') if opt.get is defined else none)
+                  or loop.index0
+                ) %}
+                {% set label = (
+                  (opt.label if opt.label is defined else none)
+                  or (opt.get('label') if opt.get is defined else none)
+                  or (opt.text if opt.text is defined else none)
+                  or (opt.get('text') if opt.get is defined else none)
+                  or (opt.title if opt.title is defined else none)
+                  or (opt.get('title') if opt.get is defined else none)
+                  or (opt.value if opt.value is defined else none)
+                  or (opt.get('value') if opt.get is defined else none)
+                  or ('Opción ' ~ loop.index)
+                ) %}
+              {% endif %}
+
               <label class="flex items-start gap-3 cursor-pointer">
                 <input
                   type="radio"
                   name="q{{ q_idx }}"
-                  value="{{ opt.key or opt.value or loop.index0 }}"
+                  value="{{ val }}"
                   required
                   class="mt-1"
                 >
-                <div class="text-emerald-100">
-                  {{ opt.label or opt.text or opt.title or opt.value or ('Opción ' ~ loop.index) }}
-                </div>
+                <div class="text-emerald-100">{{ label }}</div>
               </label>
             {% endfor %}
           </div>
+
+          {# --- DEBUG opcional: comenta/borra en producción ---
+          <details class="mt-2 opacity-70"><summary>debug</summary>
+            <pre class="text-xs">{{ q|tojson(indent=2) }}</pre>
+          </details>
+          #}
         </div>
       {% endfor %}
 
