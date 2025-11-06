@@ -153,7 +153,6 @@ class Modules(db.Model):
     is_published = db.Column(db.Boolean, default=False)
     level = db.Column(db.Integer)
     xp_reward = db.Column(db.Integer)
-    content_json = db.Column(db.Text)
 
 
     # 👇 one-to-many: a module has many activities
