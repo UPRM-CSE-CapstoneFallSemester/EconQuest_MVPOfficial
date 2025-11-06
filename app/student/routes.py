@@ -1,11 +1,6 @@
 # app/student/routes.py
 from datetime import datetime
 
-from flask import (
-    Blueprint, render_template,
-    request as flask_request,  # 👈 usa alias para evitar choques
-    redirect, url_for, flash, abort, request, current_app
-)
 from flask_login import login_required, current_user
 from app import db
 from app.models import Activities, Attempts, StudentProfile, Modules, GroupMembers, ModuleAssignments, GameSettings
@@ -17,20 +12,16 @@ from flask import (
     redirect, url_for, flash, abort,
     session as flask_session
 )
-# ⚠️ Si usas urllib para otra cosa, importa con alias distinto:
-# import urllib.request as urllib_request
 
 
-# 👇 nombre único del blueprint (NO debe repetirse en otro archivo)
+# nombre único del blueprint (NO debe repetirse en otro archivo)
 student_bp = Blueprint("student_ui", __name__, url_prefix="/student")
 #                  ^^^^^^^^^^^
 
 def _ensure_profile(u):
     # ya lo tienes en otras vistas; lo reutilizamos
     if not getattr(u, "profile", None):
-        from app import db
-        from app.models import StudentProfiles
-        p = StudentProfiles(
+        p = StudentProfile(
             user_id=u.id,
             credit_score=620,
             cash_balance=500,
@@ -154,9 +145,9 @@ def help_page():
 
 
 def _get_or_create_profile(user_id):
-    prof = StudentProfiles.query.filter_by(user_id=user_id).first()
+    prof = StudentProfile.query.filter_by(user_id=user_id).first()
     if not prof:
-        prof = StudentProfiles(user_id=user_id)
+        prof = StudentProfile(user_id=user_id)
         db.session.add(prof)
         db.session.commit()
     return prof
@@ -196,9 +187,9 @@ def play_activity(activity_id):
         return redirect(url_for("student_ui.play_activity", activity_id=a.id))
 
     if flask_request.method == "POST":
-        profile = StudentProfiles.query.filter_by(user_id=current_user.id).first()
+        profile = StudentProfile.query.filter_by(user_id=current_user.id).first()
         if not profile:
-            profile = StudentProfiles(user_id=current_user.id)
+            profile = StudentProfile(user_id=current_user.id)
             db.session.add(profile)
 
         score = 0
