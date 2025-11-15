@@ -1,118 +1,107 @@
 {% extends 'student/layout.html' %}
-
 {% block student_content %}
-<style>
-  body, main, .content, .page-bg { background: #041b15 !important; }
 
-  .activity-play { color:#e6f7f1; }
-  .activity-play .hero-title { color:#d6fff4; font-weight:700; }
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-2xl font-bold text-emerald-300">{{ activity.title }}</h1>
+  <p class="text-emerald-200/80 mt-1">Type: {{ activity.type or 'quiz' }}</p>
 
-  .activity-play .card {
-    border-radius: 18px;
-    padding: 16px;
-    background: linear-gradient(180deg, rgba(11,47,40,.92), rgba(7,28,26,.92));
-    border: 1px solid rgba(16,185,129,.22);
-    box-shadow: 0 12px 32px rgba(0,0,0,.38), inset 0 0 40px rgba(16,185,129,.05);
-  }
-
-  .activity-play .meta {
-    font-size: 12px; color:#a7c6be; opacity:.9; margin-top:6px;
-  }
-
-  .activity-play .btn {
-    display:inline-block; margin-top:12px; background:#10b981; color:#06281f;
-    font-weight:700; padding:.55rem 1rem; border-radius:12px;
-    box-shadow:0 8px 18px rgba(16,185,129,.25); text-decoration:none;
-  }
-  .activity-play .btn:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.05);
-    box-shadow: 0 10px 22px rgba(16,185,129,.32);
-  }
-
-  .choice {
-    display:flex; align-items:flex-start; gap:.6rem;
-    border:1px solid rgba(16,185,129,.22);
-    background: rgba(6,40,31,.5);
-    padding:.6rem .8rem; border-radius:12px;
-  }
-  .choice + .choice { margin-top:.5rem; }
-</style>
-
-<div class="activity-play max-w-3xl mx-auto space-y-6">
-  <header>
-    <h1 class="hero-title text-2xl">{{ activity.title }}</h1>
-
-    {# Safely get attempt values with defaults #}
-    {% set _used = attempts_count|default(attempts_used|default(0)) %}
-    {% set _limit = max_attempts|default(attempt_limit|default(None)) %}
-    {% set _left = (_limit - _used) if _limit is not none else None %}
-
-    <div class="meta">
-      Type: {{ activity.type|default('quiz') }}
-      {% if _limit is not none %} · Attempts: {{ _used }}/{{ _limit }}{% endif %}
-      {% if _left is not none %} · Left: {{ 0 if _left < 0 else _left }}{% endif %}
+  {% if attempt_limit is not none %}
+    <div class="mt-2 text-sm text-emerald-200/80">
+      Attempts: {{ attempts_used }}/{{ attempt_limit }}
+      {% if attempts_left is not none %} · Left: {{ attempts_left }}{% endif %}
     </div>
-  </header>
+  {% endif %}
 
   {% if blocked %}
-    <div class="card text-red-100 border-red-800/40" style="background:rgba(127,29,29,.25)">
+    <div class="mt-4 p-4 rounded bg-red-900/30 border border-red-800/40 text-red-100">
       You have reached the attempt limit for this activity.
     </div>
   {% else %}
-    <div class="card">
-      <form method="post" class="space-y-4">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="post" class="mt-4 space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        {# QUIZ SECTION #}
-        {% if content.questions %}
-          {% for q in content.questions %}
-            {% set q_idx = loop.index0 %}
-            <div class="space-y-2">
-              <div class="font-semibold text-emerald-100">
-                {{ loop.index }}. {{ q.prompt or q.text }}
-                {% if q.max_points %}<span class="text-emerald-300/80 text-xs">· {{ q.max_points }} pts</span>{% endif %}
-              </div>
-              <div>
-                {% for opt in q.options or [] %}
-                  <label class="choice cursor-pointer">
-                    <input type="radio" name="q{{ q_idx }}" value="{{ loop.index0 }}" required class="mt-1">
-                    <div class="text-emerald-100">{{ opt.text or opt.label }}</div>
-                  </label>
-                {% endfor %}
-              </div>
-            </div>
-          {% endfor %}
+      {# 1) Fallback robusto para encontrar las preguntas #}
+      {% set questions = (
+          content.get('questions')
+          or content.get('quiz', {}).get('questions')
+          or []
+      ) %}
 
-        {# SCENARIO SECTION #}
-        {% elif content.options %}
-          {% if content.prompt %}
-            <div class="font-semibold text-emerald-100">{{ content.prompt }}</div>
-          {% endif %}
+      {% for q in questions %}
+        {% set q_idx = loop.index0 %}
+
+        {# 2) Texto de la pregunta con múltiples llaves posibles #}
+        {% set q_text = (
+            (q.text if q is not string and q.text is defined else none)
+            or (q.get('text') if q.get is defined else none)
+            or (q.label if q is not string and q.label is defined else none)
+            or (q.get('label') if q.get is defined else none)
+            or (q.title if q is not string and q.title is defined else none)
+            or (q.get('title') if q.get is defined else none)
+            or ('Pregunta ' ~ loop.index)
+        ) %}
+
+        {# 3) Opciones: soporta 'options' o 'choices', objetos o strings #}
+        {% set opts = (
+            (q.options if q is not string and q.options is defined else none)
+            or (q.get('options') if q.get is defined else none)
+            or (q.get('choices') if q.get is defined else none)
+            or []
+        ) %}
+
+        <div class="p-4 rounded-xl bg-emerald-900/30 border border-emerald-800/40">
+          <div class="font-semibold text-emerald-100">
+            {{ loop.index }}. {{ q_text }}
+          </div>
+
           <div class="mt-2 space-y-2">
-            {% for opt in content.options %}
-              <label class="choice cursor-pointer">
-                <input type="radio" name="scenario_choice" value="{{ loop.index0 }}" required class="mt-1">
-                <div class="text-emerald-100">
-                  {{ opt.label or opt.text }}
-                  {% if opt.delta is not none %}
-                    <span class="text-emerald-300/80 text-xs">· Δ {{ opt.delta }}</span>
-                  {% endif %}
-                </div>
+            {% for opt in opts %}
+              {% if opt is string %}
+                {% set val = loop.index0 %}
+                {% set label = opt %}
+              {% else %}
+                {% set val = (
+                  (opt.key if opt.key is defined else none)
+                  or (opt.get('key') if opt.get is defined else none)
+                  or loop.index0
+                ) %}
+                {% set label = (
+                  (opt.label if opt.label is defined else none)
+                  or (opt.get('label') if opt.get is defined else none)
+                  or (opt.text if opt.text is defined else none)
+                  or (opt.get('text') if opt.get is defined else none)
+                  or (opt.title if opt.title is defined else none)
+                  or (opt.get('title') if opt.get is defined else none)
+                  or (opt.value if opt.value is defined else none)
+                  or (opt.get('value') if opt.get is defined else none)
+                  or ('Opción ' ~ loop.index)
+                ) %}
+              {% endif %}
+
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="q{{ q_idx }}"
+                  value="{{ val }}"
+                  required
+                  class="mt-1"
+                >
+                <div class="text-emerald-100">{{ label }}</div>
               </label>
             {% endfor %}
           </div>
 
-        {# FALLBACK #}
-        {% else %}
-          <div class="text-emerald-200/80">
-            This activity has no questions or options configured yet.
-          </div>
-        {% endif %}
+          {# --- DEBUG opcional: comenta/borra en producción ---
+          <details class="mt-2 opacity-70"><summary>debug</summary>
+            <pre class="text-xs">{{ q|tojson(indent=2) }}</pre>
+          </details>
+          #}
+        </div>
+      {% endfor %}
 
-        <button type="submit" class="btn">Submit</button>
-      </form>
-    </div>
+      <button class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white">Submit</button>
+    </form>
   {% endif %}
 </div>
+
 {% endblock %}
