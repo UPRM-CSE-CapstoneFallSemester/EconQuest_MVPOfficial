@@ -145,7 +145,7 @@ def help_page():
 
 
 def _get_or_create_profile(user_id):
-    prof = StudentProfile.query.filter_by(user_id=user_id).first()
+    prof = StudentProfiles.query.filter_by(user_id=user_id).first()
     if not prof:
         prof = StudentProfile(user_id=user_id)
         db.session.add(prof)
@@ -187,7 +187,7 @@ def play_activity(activity_id):
         return redirect(url_for("student_ui.play_activity", activity_id=a.id))
 
     if flask_request.method == "POST":
-        profile = StudentProfile.query.filter_by(user_id=current_user.id).first()
+        profile = StudentProfiles.query.filter_by(user_id=current_user.id).first()
         if not profile:
             profile = StudentProfile(user_id=current_user.id)
             db.session.add(profile)
