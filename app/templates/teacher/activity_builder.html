@@ -4,7 +4,7 @@
 <p class="text-emerald-300 mb-6">Module: <span class="font-semibold">{{ module.title }}</span></p>
 
 <form id="builderForm" method="post" class="space-y-4 max-w-4xl">
-  {{ csrf_token() }}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
   <div class="grid md:grid-cols-3 gap-4">
     <label class="block text-sm text-emerald-200">Activity title
@@ -23,7 +23,9 @@
 
   <div class="grid md:grid-cols-3 gap-4">
     <label class="block text-sm text-emerald-200">XP on finish
-      <input id="xp_on_finish" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2" type="number" value="120">
+      <input id="xp_on_finish" name="xp_on_finish"
+             class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
+             type="number" value="120">
     </label>
     <label class="block text-sm text-emerald-200">Published?
       <input name="is_published" type="checkbox" class="ml-2 align-middle">
@@ -50,7 +52,7 @@
   <div class="flex gap-2">
     <button type="button" id="buildBtn" class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/30">Preview</button>
     <button id="saveBtn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white">Save activity</button>
-    <a href="{{ url_for('teacher.activities_list', module_id=module.id) }}" class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/30">Cancel</a>
+    <a href="{{ url_for('teacher.activities_builder', module_id=module.id) }}" class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/30">Cancel</a>
   </div>
 </form>
 

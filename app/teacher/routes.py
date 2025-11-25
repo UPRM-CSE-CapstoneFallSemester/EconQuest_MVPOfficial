@@ -6,6 +6,8 @@ from app.models import Groups, ModuleAssignments
 from functools import wraps
 from app.models import Users, Groups, GroupMembers
 from json import loads as _json_loads
+import json
+
 
 teacher_bp = Blueprint("teacher", __name__, template_folder="../templates/teacher")
 
@@ -63,17 +65,25 @@ def module_create():
     level = request.form.get("level")
     xp_reward = request.form.get("xp_reward")
     is_published = True if request.form.get("is_published") == "on" else False
+
     if not title:
         flash("Título es requerido", "error")
         return redirect(url_for("teacher.dashboard"))
-    m = Modules(title=title, summary=summary or None,
-                level=int(level) if level else None,
-                xp_reward=int(xp_reward) if xp_reward else None,
-                is_published=is_published)
+
+    m = Modules(
+        title=title,
+        summary=summary or None,
+        level=int(level) if level else None,
+        xp_reward=int(xp_reward) if xp_reward else None,
+        is_published=is_published,
+        # opcional: empieza con JSON vacío
+        # content_json="{}"
+    )
     db.session.add(m)
     db.session.commit()
-    flash("Módulo creado", "success")
-    return redirect(url_for("teacher.dashboard"))
+    flash("Módulo creado. Ahora puedes editar su contenido.", "success")
+    # 👉 en vez de volver al dashboard, abre el constructor visual:
+    return redirect(url_for("teacher.module_builder", module_id=m.id))
 
 @teacher_bp.post("/modules/<int:module_id>/update", endpoint="module_update")
 @login_required
@@ -127,6 +137,7 @@ def activity_create():
     content_json  = request.form.get("content_json") or None
     attempt_limit = request.form.get("attempt_limit", type=int)
     default_xp    = request.form.get("default_xp", type=int)
+    xp_on_finish = int(request.form.get("xp_on_finish") or 0)
 
     # Basic guards
     if not module_id:
@@ -154,6 +165,7 @@ def activity_create():
         content_json=content_json,
         attempt_limit=attempt_limit,
         default_xp=default_xp,
+        xp_on_finish=xp_on_finish,
     )
     db.session.add(a)
     db.session.commit()
@@ -438,7 +450,7 @@ def activities_builder(module_id):
         db.session.add(a)
         db.session.commit()
         flash("MCQ game created.", "success")
-        return redirect(url_for("teacher.activities_list", module_id=m.id))
+        return redirect(url_for("teacher.activities_builder", module_id=m.id))
     return render_template("teacher/activity_builder.html", module=m)
 
 def get_settings():
@@ -469,3 +481,113 @@ def settings_save():
     db.session.commit()
     flash("Game settings saved.", "success")
     return redirect(url_for("teacher.settings_page"))
+
+@teacher_bp.route("/modules/<int:module_id>/builder", methods=["GET", "POST"])
+@login_required
+@teacher_required
+def module_builder(module_id):
+    from app.models import Modules
+    m = Modules.query.get_or_404(module_id)
+
+    # Cargar JSON existente (si está roto, usamos vacío)
+    try:
+        data = _json_loads(m.content_json or "{}")
+    except Exception:
+        data = {}
+
+    if request.method == "POST":
+        # meta del módulo
+        m.title = (request.form.get("title") or "").strip() or m.title
+        m.summary = (request.form.get("summary") or "") or None
+        m.level = request.form.get("level", type=int)
+        m.xp_reward = request.form.get("xp_reward", type=int)
+        m.is_published = bool(request.form.get("is_published"))
+
+        # JSON construido por el UI
+        m.content_json = request.form.get("content_json") or "{}"
+
+        db.session.commit()
+        flash("Módulo guardado.", "success")
+        # te dejo en el mismo builder
+        return redirect(url_for("teacher.module_builder", module_id=m.id))
+
+    return render_template(
+        "teacher/module_builder.html",
+        module=m,
+        content_json=data,
+    )
+
+
+@teacher_bp.get("/modules/new", endpoint="module_new")
+@login_required
+@teacher_required
+def module_new():
+    # crea un módulo borrador rápido
+    m = Modules(
+        title="Nuevo módulo",
+        summary=None,
+        level=None,
+        xp_reward=None,
+        is_published=False,
+        content_json="{}"  # si tu modelo lo tiene
+    )
+    db.session.add(m)
+    db.session.commit()
+    # y brinca al builder
+    return redirect(url_for("teacher.module_builder", module_id=m.id))
+
+
+from flask import request  # ya lo debes tener importado arriba
+
+@teacher_bp.route("/modules/<int:module_id>/edit", methods=["GET", "POST"])
+@login_required
+@teacher_required
+def module_edit(module_id):
+    m = Modules.query.get_or_404(module_id)
+
+    # cargar JSON existente del módulo
+    try:
+        content_json = json.loads(m.content_json) if m.content_json else {}
+    except Exception:
+        content_json = {}
+
+    if request.method == "POST":
+        m.title        = request.form.get("title") or m.title
+        m.level        = int(request.form.get("level") or 1)
+        m.xp_reward    = int(request.form.get("xp_reward") or 0)
+        m.summary      = request.form.get("summary") or None
+        m.is_published = "is_published" in request.form
+
+        # viene del hidden <input id="content-json">
+        raw_json = request.form.get("content_json")
+        if raw_json:
+            m.content_json = raw_json
+
+        db.session.commit()
+        flash("Módulo actualizado.", "success")
+        return redirect(url_for("teacher.dashboard") + "#modules")
+
+    # GET → abrir el mismo UI del builder pero precargado
+    return render_template(
+        "teacher/module_builder.html",
+        module=m,
+        content_json=content_json,
+    )
+
+
+@teacher_bp.route("/modules/<int:module_id>/activities", methods=["GET"], endpoint="activities_for_module")
+@login_required
+@teacher_required
+def activities_for_module(module_id):
+    module = Modules.query.get_or_404(module_id)
+    activities = (
+        Activities.query
+        .filter_by(module_id=module_id)
+        .order_by(Activities.position.asc(), Activities.id.asc())
+        .all()
+    )
+    return render_template(
+        "teacher/activities_list.html",
+        module=module,
+        activities=activities
+    )

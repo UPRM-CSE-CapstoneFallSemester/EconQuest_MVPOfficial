@@ -1,0 +1,413 @@
+{% extends 'teacher/layout.html' %}
+{% block teacher_content %}
+
+<div class="max-w-6xl mx-auto text-slate-100">
+
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <div class="text-xs uppercase tracking-wide text-emerald-300/70">Constructor de módulo</div>
+      <h1 class="text-2xl font-bold text-emerald-400 mt-1">
+        {{ module.title or 'Nuevo módulo' }}
+      </h1>
+      <p class="text-sm text-emerald-100/80 mt-1">
+        Arma el contenido como bloques (texto, imágenes, tips, listas) para tus estudiantes.
+      </p>
+    </div>
+    <a href="{{ url_for('teacher.dashboard') }}#modules"
+       class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-slate-100 hover:bg-slate-800">
+      ← Volver al panel
+    </a>
+  </div>
+
+  {# flash messages #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="space-y-2 mb-4">
+        {% for category, msg in messages %}
+          <div class="p-3 rounded {{ 'bg-emerald-900/30 text-emerald-200 border border-emerald-700/40' if category=='success' else 'bg-red-900/30 text-red-100 border border-red-700/40' }}">
+            {{ msg }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" id="module-form"
+        class="grid lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1.2fr)] gap-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="content_json" id="content-json">
+
+    {# ================= COLUMNA IZQUIERDA: META + BLOQUES ================= #}
+    <div class="space-y-5">
+
+      {# Meta del módulo #}
+      <div class="rounded-2xl bg-emerald-900/30 border border-emerald-800/50 p-4 space-y-3">
+        <h2 class="text-sm font-semibold text-emerald-200 mb-1">Información del módulo</h2>
+
+        <label class="text-xs block">
+          Título
+          <input name="title"
+                 class="mt-1 w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                 value="{{ module.title or '' }}" required>
+        </label>
+
+        <div class="grid md:grid-cols-3 gap-3">
+          <label class="text-xs block">
+            Nivel recomendado del estudiante
+            <input name="level" type="number" min="1"
+                   class="mt-1 w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                   value="{{ module.level or '' }}">
+            <p class="mt-1 text-[11px] text-emerald-200/70">
+              El estudiante necesita al menos este nivel para desbloquear las actividades de este módulo.
+            </p>
+          </label>
+          <label class="text-xs block">
+            XP sugerido (extra)
+            <input name="xp_reward" type="number" min="0"
+                   class="mt-1 w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm"
+                   value="{{ module.xp_reward or '' }}">
+            <p class="mt-1 text-[11px] text-emerald-200/70">
+              Solo es referencia para ti; el XP real se da al completar actividades.
+            </p>
+          </label>
+          {# Tercera columna la dejamos vacía para mantener el grid bonito #}
+          <div class="hidden md:block"></div>
+        </div>
+
+
+        <div class="grid md:grid-cols-2 gap-3">
+          <label class="text-xs block">
+            Idioma
+            {% set lang_val = content_json.get('lang', 'es') %}
+            <select id="field-lang"
+                    class="mt-1 w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm">
+              <option value="es" {{ 'selected' if lang_val == 'es' else '' }}>Español</option>
+              <option value="en" {{ 'selected' if lang_val == 'en' else '' }}>English</option>
+            </select>
+          </label>
+
+          <label class="text-xs flex items-center gap-2 mt-5">
+            <input type="checkbox" name="is_published"
+                   {{ 'checked' if module.is_published else '' }}>
+            Publicado para estudiantes
+          </label>
+        </div>
+
+        <label class="text-xs block">
+          Resumen / objetivo del módulo
+          <textarea name="summary" rows="2"
+                    class="mt-1 w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm">{{ module.summary or '' }}</textarea>
+        </label>
+      </div>
+
+      {# Bloques de contenido #}
+      <div class="rounded-2xl bg-emerald-900/30 border border-emerald-800/50 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-emerald-200">Contenido del módulo</h2>
+          <div class="flex items-center gap-2">
+            <select id="block-type"
+                    class="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-xs">
+              <option value="heading">Título / encabezado</option>
+              <option value="paragraph">Párrafo</option>
+              <option value="image">Imagen</option>
+              <option value="tip">Tip / nota</option>
+              <option value="checklist">Checklist</option>
+              <option value="divider">Separador</option>
+            </select>
+            <button type="button" id="btn-add-block"
+                    class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">
+              + Añadir bloque
+            </button>
+          </div>
+        </div>
+
+        <p class="text-xs text-emerald-200/80 mb-2">
+          Usa bloques cortos y visuales. Piensa en explicar conceptos de economía con ejemplos de la vida real (IVU, renta, carro, etc.).
+        </p>
+
+        <div id="blocks" class="space-y-3">
+          {# aquí JS inyecta los bloques #}
+        </div>
+
+        <div class="mt-4 text-right">
+          <button type="submit"
+                  class="inline-flex justify-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold">
+            Guardar módulo
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    {# ================= COLUMNA DERECHA: PREVIEW JSON + TIPS ================= #}
+    <div class="space-y-4">
+
+      <div class="rounded-2xl bg-slate-950/80 border border-emerald-800/70 p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-emerald-200">JSON del módulo</h2>
+          <button type="button" id="btn-copy-json"
+                  class="px-2 py-1 rounded border border-emerald-600 text-emerald-300 text-xs hover:bg-emerald-900/40">
+            Copiar JSON
+          </button>
+        </div>
+        <p class="text-xs text-emerald-200/70 mt-1">
+          Esto es lo que se guarda en <code>content_json</code>. Puedes usarlo para debug o para ver la estructura.
+        </p>
+        <textarea id="json-preview"
+                  class="mt-2 w-full h-72 text-[11px] font-mono rounded bg-slate-950 border border-slate-700/80 p-3 overflow-auto"
+                  readonly></textarea>
+      </div>
+
+      <div class="rounded-2xl bg-emerald-900/40 border border-emerald-800/70 p-4 text-xs text-emerald-100/80 space-y-2">
+        <div class="font-semibold flex items-center gap-2">
+          <span>💡 Tips para módulos efectivos</span>
+        </div>
+        <ul class="list-disc list-inside space-y-1">
+          <li>3–5 oraciones por párrafo; mejor muchos bloques cortos que uno enorme.</li>
+          <li>Alterna texto con tips e imágenes para mantener atención.</li>
+          <li>Conecta siempre con ejemplos que los estudiantes vean a diario (supermercado, gasolina, IVU, renta, etc.).</li>
+        </ul>
+      </div>
+
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const initial = {{ content_json|tojson|safe }};
+  const blocksContainer = document.getElementById('blocks');
+  const blockTypeSelect = document.getElementById('block-type');
+  const addBlockBtn     = document.getElementById('btn-add-block');
+  const jsonPreview     = document.getElementById('json-preview');
+  const hiddenJson      = document.getElementById('content-json');
+  const form            = document.getElementById('module-form');
+  const fieldLang       = document.getElementById('field-lang');
+  const copyBtn         = document.getElementById('btn-copy-json');
+
+  function headerHtml(label){
+    return `
+      <div class="flex items-center justify-between text-[11px] text-slate-300">
+        <span class="font-semibold">${label}</span>
+        <div class="flex items-center gap-1">
+          <button type="button" class="btn-move-up px-2 py-1 rounded bg-slate-800 border border-slate-600 text-xs">↑</button>
+          <button type="button" class="btn-move-down px-2 py-1 rounded bg-slate-800 border border-slate-600 text-xs">↓</button>
+          <button type="button" class="btn-delete px-2 py-1 rounded bg-rose-700 hover:bg-rose-600 text-xs text-white">✕</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function wireBlock(block){
+    const btnDel = block.querySelector('.btn-delete');
+    const btnUp  = block.querySelector('.btn-move-up');
+    const btnDn  = block.querySelector('.btn-move-down');
+
+    btnDel.addEventListener('click', function(){
+      block.remove();
+      renderJson();
+    });
+
+    btnUp.addEventListener('click', function(){
+      const prev = block.previousElementSibling;
+      if(prev) {
+        blocksContainer.insertBefore(block, prev);
+        renderJson();
+      }
+    });
+
+    btnDn.addEventListener('click', function(){
+      const next = block.nextElementSibling;
+      if(next) {
+        blocksContainer.insertBefore(next, block);
+        renderJson();
+      }
+    });
+
+    // si cambian inputs dentro del bloque, actualizamos JSON
+    block.addEventListener('input', renderJson);
+  }
+
+  function fillBlockFromData(block, type, data){
+    data = data || {};
+    if(type === 'heading'){
+      block.querySelector('input[name="heading_text"]').value = data.text || '';
+      block.querySelector('select[name="heading_level"]').value = data.level || 'h2';
+    } else if(type === 'paragraph'){
+      block.querySelector('textarea[name="paragraph_text"]').value = data.text || '';
+    } else if(type === 'image'){
+      block.querySelector('input[name="image_url"]').value = data.url || '';
+      block.querySelector('input[name="image_caption"]').value = data.caption || '';
+    } else if(type === 'tip'){
+      block.querySelector('input[name="tip_title"]').value = data.title || '';
+      block.querySelector('textarea[name="tip_text"]').value = data.text || '';
+    } else if(type === 'checklist'){
+      block.querySelector('input[name="checklist_title"]').value = data.title || '';
+      const items = Array.isArray(data.items) ? data.items : [];
+      block.querySelector('textarea[name="checklist_items"]').value = items.join("\\n");
+    }
+  }
+
+  function addBlock(type, data){
+    const block = document.createElement('div');
+    block.className = "module-block rounded-xl bg-slate-900/70 border border-slate-700/70 p-3 space-y-2";
+    block.dataset.type = type;
+
+    let inner = "";
+    if(type === "heading"){
+      inner = headerHtml("Título / encabezado") + `
+        <div class="mt-2 grid grid-cols-[minmax(0,1.6fr)_minmax(0,0.9fr)] gap-2 items-center">
+          <input type="text" name="heading_text"
+                 class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                 placeholder="Ej: ¿Qué es un presupuesto?">
+          <select name="heading_level"
+                  class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-xs">
+            <option value="h2">Grande (sección)</option>
+            <option value="h3">Medio</option>
+            <option value="label">Etiqueta pequeña</option>
+          </select>
+        </div>
+      `;
+    } else if(type === "paragraph"){
+      inner = headerHtml("Párrafo") + `
+        <textarea name="paragraph_text" rows="3"
+                  class="mt-2 w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                  placeholder="Explica el concepto en lenguaje sencillo. Ej: Un presupuesto es un plan para tu dinero..."></textarea>
+      `;
+    } else if(type === "image"){
+      inner = headerHtml("Imagen") + `
+        <div class="mt-2 space-y-2">
+          <input type="text" name="image_url"
+                 class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                 placeholder="URL de la imagen (por ahora)">
+          <input type="text" name="image_caption"
+                 class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-xs"
+                 placeholder="Descripción corta (ej: Ejemplo de talonario de cheque)">
+          <p class="text-[11px] text-emerald-200/70">
+            Más adelante puedes cambiar esto a uploads; por ahora el front solo guarda la URL en el JSON.
+          </p>
+        </div>
+      `;
+    } else if(type === "tip"){
+      inner = headerHtml("Tip / nota") + `
+        <div class="mt-2 space-y-2">
+          <input type="text" name="tip_title"
+                 class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                 placeholder="Ej: Recuerda">
+          <textarea name="tip_text" rows="3"
+                    class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                    placeholder="Ej: Nunca gastes más de lo que ganas cada mes..."></textarea>
+        </div>
+      `;
+    } else if(type === "checklist"){
+      inner = headerHtml("Checklist") + `
+        <div class="mt-2 space-y-2">
+          <input type="text" name="checklist_title"
+                 class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                 placeholder="Ej: Pasos para crear un presupuesto">
+          <textarea name="checklist_items" rows="3"
+                    class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 text-sm"
+                    placeholder="Un ítem por línea"></textarea>
+        </div>
+      `;
+    } else if(type === "divider"){
+      inner = headerHtml("Separador") + `
+        <div class="mt-2 border-t border-slate-700/80"></div>
+      `;
+    }
+
+    block.innerHTML = inner;
+    blocksContainer.appendChild(block);
+    wireBlock(block);
+    fillBlockFromData(block, type, data);
+    renderJson();
+  }
+
+    function buildPayload(){
+      const lang = fieldLang ? (fieldLang.value || "es") : "es";
+
+      const sections = Array.from(
+        blocksContainer.querySelectorAll('.module-block')
+      ).map(block => {
+        const type = block.dataset.type;
+        if(type === "heading"){
+          const text = block.querySelector('input[name="heading_text"]').value.trim();
+          const level = block.querySelector('select[name="heading_level"]').value || "h2";
+          if(!text){ return null; }
+          return { type:"heading", level, text };
+        }
+        if(type === "paragraph"){
+          const text = block.querySelector('textarea[name="paragraph_text"]').value.trim();
+          if(!text){ return null; }
+          return { type:"paragraph", text };
+        }
+        if(type === "image"){
+          const url = block.querySelector('input[name="image_url"]').value.trim();
+          const caption = block.querySelector('input[name="image_caption"]').value.trim();
+          if(!url){ return null; }
+          return { type:"image", url, caption };
+        }
+        if(type === "tip"){
+          const title = block.querySelector('input[name="tip_title"]').value.trim();
+          const text = block.querySelector('textarea[name="tip_text"]').value.trim();
+          if(!title && !text){ return null; }
+          return { type:"tip", icon:"💡", title, text };
+        }
+        if(type === "checklist"){
+          const title = block.querySelector('input[name="checklist_title"]').value.trim();
+          const raw = block.querySelector('textarea[name="checklist_items"]').value;
+          const items = raw.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+          if(!title && !items.length){ return null; }
+          return { type:"checklist", title, items };
+        }
+        if(type === "divider"){
+          return { type:"divider" };
+        }
+        return null;
+      }).filter(Boolean);
+
+      return {
+        version: 1,
+        lang: lang,
+        sections: sections
+      };
+    }
+
+
+  function renderJson(){
+    const payload = buildPayload();
+    const pretty = JSON.stringify(payload, null, 2);
+    jsonPreview.value = pretty;
+    hiddenJson.value   = JSON.stringify(payload);
+  }
+
+  addBlockBtn.addEventListener('click', function(){
+    const t = blockTypeSelect.value || "paragraph";
+    addBlock(t);
+  });
+
+  if(fieldLang){ fieldLang.addEventListener('change', renderJson); }
+
+  form.addEventListener('submit', function(){
+    renderJson();
+  });
+
+  copyBtn.addEventListener('click', function(){
+    if(!jsonPreview.value) return;
+    navigator.clipboard.writeText(jsonPreview.value).catch(() => {});
+  });
+
+  // ===== Inicializar desde JSON existente o plantilla por defecto =====
+  const secs = (initial && Array.isArray(initial.sections)) ? initial.sections : [];
+  if(secs.length){
+    secs.forEach(s => addBlock(s.type || "paragraph", s));
+  } else {
+    addBlock("heading", { text:"¿De qué trata este módulo?", level:"h2" });
+    addBlock("paragraph", { text:"Explica brevemente el objetivo del módulo y qué van a aprender sobre economía." });
+  }
+
+  renderJson();
+})();
+</script>
+
+{% endblock %}

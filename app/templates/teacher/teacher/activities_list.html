@@ -1,0 +1,68 @@
+{% extends 'teacher/layout.html' %}
+{% block teacher_content %}
+
+<div class="max-w-5xl mx-auto text-slate-100">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <div class="text-xs uppercase tracking-wide text-emerald-300/70">
+        Actividades del módulo
+      </div>
+      <h1 class="text-2xl font-bold text-emerald-200 mt-1">
+        {{ module.title }}
+      </h1>
+      <p class="text-sm text-emerald-100/80 mt-1">
+        Aquí ves todas las actividades ligadas a este módulo. Desde aquí puedes
+        crear nuevas o abrirlas como estudiante para probarlas.
+      </p>
+    </div>
+
+    <a href="{{ url_for('teacher.activities_builder', module_id=module.id) }}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+              bg-emerald-600 hover:bg-emerald-500 text-sm font-semibold text-white">
+      ＋ Nueva actividad MCQ
+    </a>
+  </div>
+
+  {% if activities %}
+    <div class="space-y-3">
+      {% for a in activities %}
+        <div class="rounded-2xl bg-emerald-950/70 border border-emerald-800/70 p-4 flex items-center justify-between gap-3">
+          <div>
+            <div class="text-sm font-semibold text-emerald-50">
+              {{ a.title or 'Sin título' }}
+            </div>
+            <div class="text-xs text-emerald-200/80 mt-1">
+              Tipo: {{ a.type or 'mcq' }}
+              · Posición: {{ a.position or 0 }}
+              · Máx. {{ a.max_points or 0 }} pts
+              {% if a.is_published %}
+                · <span class="text-emerald-300">Publicado</span>
+              {% else %}
+                · <span class="text-slate-300">Borrador</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            {# Ver como estudiante #}
+            <a href="{{ url_for('student_ui.play_activity', activity_id=a.id) }}"
+               target="_blank"
+               class="px-3 py-1 rounded-full text-xs bg-slate-900/70 border border-slate-600/70 hover:bg-slate-800">
+              👁 Ver / probar
+            </a>
+
+            {# TODO: cuando tengas builder para editar, aquí pones ese endpoint #}
+            {# <a href="{{ url_for('teacher.activities_builder_edit', module_id=module.id, activity_id=a.id) }}" ...>✏ Editar</a> #}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="rounded-2xl bg-emerald-950/70 border border-emerald-800/70 p-4 text-sm text-emerald-100/80">
+      Este módulo todavía no tiene actividades.
+      Usa el botón <span class="font-semibold">“Nueva actividad MCQ”</span> para crear la primera.
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
