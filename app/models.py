@@ -189,6 +189,7 @@ class Activities(db.Model):
 
     # 👇 the other side of the relation; MUST exist to match back_populates above
     module = db.relationship("Modules", back_populates="activities")
+    xp_on_finish = db.Column(db.Integer, nullable=True, default=0)
 
 # —— Global game knobs teachers can tune (single row id=1) ——
 class GameSettings(db.Model):
@@ -304,7 +305,46 @@ class ModuleAssignments(db.Model):
     module = db.relationship("Modules", backref=backref("assignments", lazy="select"))
 
 
+class Missions(db.Model):
+    __tablename__ = "missions"
 
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text)
+
+    # cómo se completa
+    condition_type = db.Column(db.String(50), nullable=False)  # 'reach_level', 'complete_module', 'complete_any_module'
+    condition_value = db.Column(db.Integer)  # nivel o module_id, depende del tipo
+
+    # recompensa
+    xp_reward = db.Column(db.Integer, default=0)
+    cash_reward = db.Column(db.Float, default=0.0)
+
+    is_active = db.Column(db.Boolean, default=True)
+
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"))
+    creator = db.relationship("Users", backref="created_missions")
+
+
+class MissionProgress(db.Model):
+    __tablename__ = "mission_progress"
+
+    id = db.Column(db.Integer, primary_key=True)
+    mission_id = db.Column(db.Integer, db.ForeignKey("missions.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+
+    is_completed = db.Column(db.Boolean, default=False)  # requisito cumplido
+    is_collected = db.Column(db.Boolean, default=False)  # recompensa cobrada
+
+    completed_at = db.Column(db.DateTime)
+    collected_at = db.Column(db.DateTime)
+
+    mission = db.relationship("Missions", backref="progress_entries")
+    user = db.relationship("Users", backref="mission_progress")
+
+    __table_args__ = (
+        db.UniqueConstraint("mission_id", "user_id", name="uq_mission_user"),
+    )
 
 
 

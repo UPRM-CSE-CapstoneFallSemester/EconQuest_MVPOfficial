@@ -1,0 +1,155 @@
+{% extends 'student/layout.html' %}
+{% block student_content %}
+<style>
+  .mission-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:16px;
+  }
+  .mission-card{
+    border-radius:18px;
+    padding:16px;
+    background: radial-gradient(circle at top left, rgba(16,185,129,.22), transparent 50%),
+                linear-gradient(145deg, rgba(6,32,27,.98), rgba(4,20,17,.98));
+    border:1px solid rgba(16,185,129,.35);
+    box-shadow:0 12px 28px rgba(0,0,0,.45), inset 0 0 30px rgba(16,185,129,.06);
+    position:relative;
+  }
+  .mission-card.locked{
+    filter:grayscale(1) brightness(.8);
+    border-style:dashed;
+    border-color:rgba(148,163,184,.6);
+  }
+  .mission-title{
+    font-weight:600;
+    color:#ecfeff;
+    margin-bottom:4px;
+  }
+  .mission-body{
+    font-size:.85rem;
+    color:#bae6fd;
+  }
+  .mission-rewards{
+    margin-top:8px;
+    font-size:.78rem;
+    color:#a7f3d0;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .mission-pill{
+    padding:3px 8px;
+    border-radius:999px;
+    background:rgba(15,23,42,.9);
+    border:1px solid rgba(148,163,184,.5);
+  }
+  .mission-footer{
+    margin-top:12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:.75rem;
+    color:#94a3b8;
+  }
+  .mission-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:.4rem .9rem;
+    border-radius:999px;
+    border:none;
+    background:#10b981;
+    color:#022c22;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow:0 8px 18px rgba(16,185,129,.3);
+    font-size:.8rem;
+  }
+  .mission-btn[disabled]{
+    opacity:.5;
+    cursor:default;
+    box-shadow:none;
+  }
+</style>
+
+<div class="stu-dashboard space-y-6">
+  <section class="guard-left space-y-1">
+    <h1 class="text-2xl font-bold text-emerald-800">Misiones</h1>
+    <p class="text-sm text-emerald-800 max-w-2xl">
+      Completa misiones de progreso (subir de nivel, terminar módulos, etc.) para conseguir XP extra y dinero.
+    </p>
+    {% if mission_summary %}
+      <p class="text-xs text-emerald-800">
+        Misiones listas para cobrar: {{ mission_summary.ready }} ·
+        Completadas: {{ mission_summary.completed }} / {{ mission_summary.total }}
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="guard-left">
+    {% if missions_rows %}
+      <div class="mission-grid">
+        {% for mission, prog in missions_rows %}
+          {% set is_done = prog and prog.is_completed %}
+          {% set is_collected = prog and prog.is_collected %}
+
+          <div class="mission-card {{ 'locked' if not is_done else '' }}">
+            <div class="mission-title">{{ mission.title }}</div>
+            <div class="mission-body">
+              {{ mission.description or 'Completa el objetivo para desbloquear la recompensa.' }}
+            </div>
+
+            <div class="mission-rewards">
+              {% if mission.xp_reward %}
+                <span class="mission-pill">⭐ {{ mission.xp_reward }} XP</span>
+              {% endif %}
+              {% if mission.cash_reward %}
+                <span class="mission-pill">💵 ${{ '%.2f'|format(mission.cash_reward) }}</span>
+              {% endif %}
+              <span class="mission-pill">
+                🎯
+                {% if mission.condition_type == 'reach_level' %}
+                  Llega al nivel {{ mission.condition_value }}
+                {% elif mission.condition_type == 'complete_module' %}
+                  Completa el módulo #{{ mission.condition_value }}
+                {% elif mission.condition_type == 'complete_any_module' %}
+                  Completa tu primer módulo
+                {% else %}
+                  Objetivo especial ({{ mission.condition_type }})
+                {% endif %}
+              </span>
+            </div>
+
+            <div class="mission-footer">
+              <span>
+                {% if is_collected %}
+                  ✅ Recompensa cobrada
+                {% elif is_done %}
+                  ✅ Objetivo cumplido · listo para cobrar
+                {% else %}
+                  ⏳ En progreso
+                {% endif %}
+              </span>
+
+              {% if is_collected %}
+                <button class="mission-btn" disabled>Collected</button>
+              {% elif is_done %}
+                <form method="post" action="{{ url_for('student_ui.collect_mission', mission_id=mission.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="mission-btn">Collect</button>
+                </form>
+              {% else %}
+                <button class="mission-btn" disabled>Bloqueada</button>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        🎯 Aún no hay misiones configuradas por tu profesor.
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

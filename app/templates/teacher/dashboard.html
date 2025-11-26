@@ -228,6 +228,131 @@
     </div>
   </div>
 
+      {# ===== Misiones (retos de progreso) ===== #}
+  <a id="missions"></a>
+  <div class="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-800/40 mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-emerald-200">Misiones</h2>
+      <details class="bg-emerald-900/30 rounded-xl px-4 py-2 border border-emerald-800/40">
+        <summary class="cursor-pointer text-emerald-200 text-sm">➕ Crear misión</summary>
+        <form method="post" action="{{ url_for('teacher.mission_create') }}" class="mt-3 grid md:grid-cols-2 gap-3 text-sm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+                 name="title" placeholder="Título (ej. 'Sube al nivel 2')" required>
+
+          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700 md:col-span-2"
+                 name="description" placeholder="Descripción corta">
+
+          <select class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+                  name="condition_type" required>
+            <option value="">Condición</option>
+            <option value="reach_level">Llegar a un nivel</option>
+            <option value="complete_any_module">Completar el primer módulo</option>
+            <option value="complete_module">Completar módulo específico (ID)</option>
+          </select>
+
+          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+                 name="condition_value" placeholder="Nivel o ID de módulo (según tipo)">
+
+          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+                 name="xp_reward" placeholder="XP recompensa" value="50">
+
+          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+                 name="cash_reward" placeholder="Dinero recompensa (ej. 100)">
+
+          <label class="text-xs flex items-center gap-2">
+            <input type="checkbox" name="is_active" checked> Activa
+          </label>
+
+          <div class="md:col-span-2">
+            <button class="px-3 py-2 rounded bg-emerald-600 text-white text-sm">Crear misión</button>
+          </div>
+        </form>
+      </details>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-3">
+      {% for m in missions %}
+        <div class="rounded-xl bg-emerald-900/30 border border-emerald-800/40 p-4 text-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="font-semibold text-emerald-100">{{ m.title }}</div>
+              <div class="text-xs text-emerald-200/80 mt-1">{{ m.description or '' }}</div>
+              <div class="mt-2 text-xs text-emerald-200/80">
+                🎯
+                {% if m.condition_type == 'reach_level' %}
+                  Llegar al nivel {{ m.condition_value }}
+                {% elif m.condition_type == 'complete_any_module' %}
+                  Completar el primer módulo
+                {% elif m.condition_type == 'complete_module' %}
+                  Completar el módulo #{{ m.condition_value }}
+                {% else %}
+                  Condición especial ({{ m.condition_type }})
+                {% endif %}
+              </div>
+              <div class="mt-1 text-xs text-emerald-200/80">
+                Recompensa:
+                {% if m.xp_reward %}⭐ {{ m.xp_reward }} XP{% endif %}
+                {% if m.cash_reward %} · 💵 ${{ '%.2f'|format(m.cash_reward) }}{% endif %}
+              </div>
+            </div>
+            <span class="px-2 py-1 rounded-full text-[11px]
+                         {{ 'bg-emerald-900/70 text-emerald-300 border border-emerald-500/60' if m.is_active else 'bg-slate-900/70 text-slate-300 border border-slate-500/60' }}">
+              {{ 'Activa' if m.is_active else 'Inactiva' }}
+            </span>
+          </div>
+
+          <details class="mt-3">
+            <summary class="cursor-pointer text-emerald-300 text-xs">Editar misión</summary>
+            <form method="post" action="{{ url_for('teacher.mission_update', mission_id=m.id) }}" class="mt-2 grid md:grid-cols-2 gap-2 text-xs">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+              <input class="px-2 py-1 rounded bg-slate-900 border border-slate-700"
+                     name="title" value="{{ m.title }}">
+
+              <input class="px-2 py-1 rounded bg-slate-900 border border-slate-700 md:col-span-2"
+                     name="description" value="{{ m.description or '' }}">
+
+              <select class="px-2 py-1 rounded bg-slate-900 border border-slate-700"
+                      name="condition_type">
+                <option value="reach_level" {{ 'selected' if m.condition_type=='reach_level' else '' }}>Llegar a un nivel</option>
+                <option value="complete_any_module" {{ 'selected' if m.condition_type=='complete_any_module' else '' }}>Completar primer módulo</option>
+                <option value="complete_module" {{ 'selected' if m.condition_type=='complete_module' else '' }}>Completar módulo específico</option>
+              </select>
+
+              <input class="px-2 py-1 rounded bg-slate-900 border border-slate-700"
+                     name="condition_value" value="{{ m.condition_value or '' }}"
+                     placeholder="Nivel o módulo id">
+
+              <input class="px-2 py-1 rounded bg-slate-900 border border-slate-700"
+                     name="xp_reward" value="{{ m.xp_reward or 0 }}">
+
+              <input class="px-2 py-1 rounded bg-slate-900 border border-slate-700"
+                     name="cash_reward" value="{{ m.cash_reward or 0 }}">
+
+              <label class="flex items-center gap-2">
+                <input type="checkbox" name="is_active" {{ 'checked' if m.is_active else '' }}> Activa
+              </label>
+
+              <div class="md:col-span-2 mt-1">
+                <button class="px-3 py-1 rounded bg-emerald-600 text-white text-xs">Guardar</button>
+              </div>
+            </form>
+
+            <form method="post" action="{{ url_for('teacher.mission_delete', mission_id=m.id) }}"
+                  onsubmit="return confirm('¿Eliminar misión?')" class="mt-2">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="px-3 py-1 rounded bg-rose-600 text-white text-xs">Eliminar</button>
+            </form>
+          </details>
+        </div>
+      {% else %}
+        <div class="text-emerald-200/80 text-sm">Aún no has creado misiones.</div>
+      {% endfor %}
+    </div>
+  </div>
+
   {# ===== Grupos ===== #}
   <a id="groups"></a>
   <div class="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-800/40 mb-6">

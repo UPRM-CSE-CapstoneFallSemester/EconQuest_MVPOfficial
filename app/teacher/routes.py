@@ -1,13 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from app import db
-from app.models import Users, Modules, Activities, GameSettings
-from app.models import Groups, ModuleAssignments
+from app.models import Groups, ModuleAssignments, Missions
 from functools import wraps
 from app.models import Users, Groups, GroupMembers
 from json import loads as _json_loads
 import json
 
+from app.models import Modules, Activities, GameSettings
 
 teacher_bp = Blueprint("teacher", __name__, template_folder="../templates/teacher")
 
@@ -33,6 +33,7 @@ def teacher_required(view_func):
 def dashboard():
     from app.models import Modules, Activities, Groups
 
+    missions = Missions.query.order_by(Missions.id.asc()).all()
     modules = Modules.query.order_by(Modules.id.desc()).all()
     recent_activities = Activities.query.order_by(Activities.id.desc()).limit(8).all()
 
@@ -53,6 +54,7 @@ def dashboard():
         recent_activities=recent_activities,
         groups=my_groups,
         students=students,
+        missions=missions,
     )
 
 # ----------------- Modules CRUD -----------------
@@ -591,3 +593,64 @@ def activities_for_module(module_id):
         module=module,
         activities=activities
     )
+
+@teacher_bp.post("/missions/create", endpoint="mission_create")
+@login_required
+@teacher_required
+def mission_create():
+    title = (request.form.get("title") or "").strip()
+    description = (request.form.get("description") or "").strip() or None
+    condition_type = (request.form.get("condition_type") or "").strip()
+    condition_value = request.form.get("condition_value", type=int)
+    xp_reward = request.form.get("xp_reward", type=int) or 0
+    cash_reward = request.form.get("cash_reward", type=float) or 0.0
+    is_active = bool(request.form.get("is_active"))
+
+    if not title or not condition_type:
+        flash("Título y tipo de condición son requeridos.", "error")
+        return redirect(url_for("teacher.dashboard") + "#missions")
+
+    m = Missions(
+        title=title,
+        description=description,
+        condition_type=condition_type,
+        condition_value=condition_value,
+        xp_reward=xp_reward,
+        cash_reward=cash_reward,
+        is_active=is_active,
+        created_by=current_user.id,
+    )
+    db.session.add(m)
+    db.session.commit()
+    flash("Misión creada.", "success")
+    return redirect(url_for("teacher.dashboard") + "#missions")
+
+
+@teacher_bp.post("/missions/<int:mission_id>/update", endpoint="mission_update")
+@login_required
+@teacher_required
+def mission_update(mission_id):
+    m = Missions.query.get_or_404(mission_id)
+
+    m.title = (request.form.get("title") or m.title).strip()
+    m.description = (request.form.get("description") or "") or None
+    m.condition_type = (request.form.get("condition_type") or m.condition_type).strip()
+    m.condition_value = request.form.get("condition_value", type=int)
+    m.xp_reward = request.form.get("xp_reward", type=int) or m.xp_reward or 0
+    m.cash_reward = request.form.get("cash_reward", type=float) or m.cash_reward or 0.0
+    m.is_active = bool(request.form.get("is_active"))
+
+    db.session.commit()
+    flash("Misión actualizada.", "success")
+    return redirect(url_for("teacher.dashboard") + "#missions")
+
+
+@teacher_bp.post("/missions/<int:mission_id>/delete", endpoint="mission_delete")
+@login_required
+@teacher_required
+def mission_delete(mission_id):
+    m = Missions.query.get_or_404(mission_id)
+    db.session.delete(m)
+    db.session.commit()
+    flash("Misión eliminada.", "success")
+    return redirect(url_for("teacher.dashboard") + "#missions")

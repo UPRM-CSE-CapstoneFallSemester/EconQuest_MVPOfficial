@@ -5,6 +5,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Activities, Attempts, StudentProfiles, Modules, GroupMembers, ModuleAssignments, GameSettings
 import json
+from app.models import Missions, MissionProgress
+
 
 from flask import (
     Blueprint, render_template,
@@ -21,7 +23,7 @@ student_bp = Blueprint("student_ui", __name__, url_prefix="/student")
 def _ensure_profile(u):
     # ya lo tienes en otras vistas; lo reutilizamos
     if not getattr(u, "profile", None):
-        p = StudentProfile(
+        p = StudentProfiles(
             user_id=u.id,
             credit_score=620,
             cash_balance=500,
@@ -113,13 +115,72 @@ def dashboard():
             .all()
         )
 
-    return render_template("student/dashboard.html", modules=modules, activities=activities, profile=profile)
+    # misiones (para usar resumen si quieres en el dashboard)
+    mission_rows, mission_summary = _evaluate_missions_for_user(current_user.id)
+
+    return render_template(
+        "student/dashboard.html",
+        modules=modules,
+        activities=activities,
+        profile=profile,
+        mission_summary=mission_summary,
+    )
 
 @student_bp.route("/missions")
 @login_required
 def missions():
-    profile = _ensure_profile(current_user)
-    return render_template("student/placeholder.html", title="Misiones", profile=profile)
+    profile = _get_or_create_profile(current_user.id)
+    rows, summary = _evaluate_missions_for_user(current_user.id)
+
+    return render_template(
+        "student/missions.html",
+        profile=profile,
+        missions_rows=rows,
+        mission_summary=summary,
+    )
+
+@student_bp.route("/missions/<int:mission_id>/collect", methods=["POST"], endpoint="collect_mission")
+@login_required
+def collect_mission(mission_id):
+    profile = _get_or_create_profile(current_user.id)
+    mission = Missions.query.get_or_404(mission_id)
+
+    prog = MissionProgress.query.filter_by(
+        mission_id=mission.id,
+        user_id=current_user.id
+    ).first()
+
+    if not prog or not prog.is_completed:
+        flash("Esta misión todavía no está completa.", "error")
+        return redirect(url_for("student_ui.missions"))
+
+    if prog.is_collected:
+        flash("Ya cobraste la recompensa de esta misión.", "error")
+        return redirect(url_for("student_ui.missions"))
+
+    # aplicar recompensas
+    profile.xp = int((profile.xp or 0) + int(mission.xp_reward or 0))
+    profile.cash_balance = float(profile.cash_balance or 0.0) + float(mission.cash_reward or 0.0)
+
+    # recalcular level-ups usando la misma lógica que las actividades
+    s = get_settings()
+    level_ups = 0
+    while True:
+        need = xp_needed_for_next(int(profile.level or 1), s)
+        if profile.xp >= need:
+            profile.xp -= need
+            profile.level = int(profile.level or 1) + 1
+            level_ups += 1
+        else:
+            break
+
+    prog.is_collected = True
+    prog.collected_at = datetime.utcnow()
+
+    db.session.commit()
+    flash("Recompensa de misión cobrada.", "success")
+    return redirect(url_for("student_ui.missions"))
+
 
 @student_bp.route("/wallet")
 @login_required
@@ -149,7 +210,7 @@ def help_page():
 def _get_or_create_profile(user_id):
     prof = StudentProfiles.query.filter_by(user_id=user_id).first()
     if not prof:
-        prof = StudentProfile(user_id=user_id)
+        prof = StudentProfiles(user_id=user_id)
         db.session.add(prof)
         db.session.commit()
     return prof
@@ -389,7 +450,85 @@ def module_detail(module_id):
     )
 
 
+def _check_mission_completed(mission, profile, user_id):
+    """Devuelve True si el estudiante cumple la condición de la misión."""
+    t = (mission.condition_type or "").lower()
+    val = mission.condition_value
 
+    # 1) Llegar a cierto nivel
+    if t == "reach_level" and val is not None:
+        return (profile.level or 1) >= int(val)
+
+    # 2) Completar un módulo específico (todas sus actividades)
+    if t == "complete_module" and val is not None:
+        module = Modules.query.get(int(val))
+        if not module:
+            return False
+        total = len(module.activities)
+        if total == 0:
+            return False
+
+        done = (
+            Attempts.query.filter_by(user_id=user_id)
+            .join(Activities)
+            .filter(Activities.module_id == module.id)
+            .count()
+        )
+        return done >= total
+
+    # 3) Completar tu PRIMER módulo (cualquiera)
+    if t == "complete_any_module":
+        modules = Modules.query.all()
+        for m in modules:
+            total = len(m.activities)
+            if total == 0:
+                continue
+            done = (
+                Attempts.query.filter_by(user_id=user_id)
+                .join(Activities)
+                .filter(Activities.module_id == m.id)
+                .count()
+            )
+            if done >= total:
+                return True
+        return False
+
+    return False
+
+
+def _evaluate_missions_for_user(user_id):
+    """Crea/actualiza MissionProgress y devuelve (lista, resumen)."""
+    profile = _get_or_create_profile(user_id)
+    missions = Missions.query.filter_by(is_active=True).order_by(Missions.id.asc()).all()
+
+    rows = []
+    changed = False
+
+    for m in missions:
+        prog = MissionProgress.query.filter_by(mission_id=m.id, user_id=user_id).first()
+        if not prog:
+            prog = MissionProgress(mission_id=m.id, user_id=user_id)
+            db.session.add(prog)
+            changed = True
+
+        completed = _check_mission_completed(m, profile, user_id)
+        if completed and not prog.is_completed:
+            prog.is_completed = True
+            prog.completed_at = datetime.utcnow()
+            changed = True
+
+        rows.append((m, prog))
+
+    if changed:
+        db.session.commit()
+
+    summary = {
+        "total": len(rows),
+        "ready": sum(1 for m, p in rows if p.is_completed and not p.is_collected),
+        "completed": sum(1 for m, p in rows if p.is_completed),
+        "collected": sum(1 for m, p in rows if p.is_collected),
+    }
+    return rows, summary
 
 
 

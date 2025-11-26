@@ -334,7 +334,7 @@
 
       <!-- Stats: actividades -->
       <div class="card-base hud-stat">
-        <div class="hud-stat-title">Misiones disponibles</div>
+        <div class="hud-stat-title">Actividades disponibles</div>
         <div class="hud-stat-main">{{ total_activities }}</div>
         <div class="hud-stat-sub">
           {{ 'Completa actividades para ganar XP y recompensas.' if total_activities else 'Cuando haya actividades podrás verlas aquí.' }}
@@ -349,8 +349,8 @@
     <div class="flex items-center justify-between gap-2">
       <h2 class="stu-title text-xl">Módulos disponibles</h2>
       {% if total_modules %}
-        <span class="text-xs text-emerald-200/80">
-          Escoge un módulo para ver su historia y misiones.
+        <span class="text-xs text-emerald-800">
+          Escoge un módulo para ver su historia y actividades.
         </span>
       {% endif %}
     </div>
@@ -408,13 +408,13 @@
     </div>
   </section>
 
-  <!-- ===== ACTIVIDADES / MISIONES RÁPIDAS ===== -->
+  <!-- ===== ACTIVIDADES ===== -->
   <section class="space-y-3 guard-left">
     <div class="flex items-center justify-between gap-2">
-      <h2 class="stu-title text-xl">Misiones rápidas</h2>
+      <h2 class="stu-title text-xl">Actividades rápidas</h2>
       {% if total_activities %}
-        <span class="text-xs text-emerald-200/80">
-          Elige una misión para ganar XP y mejorar tu perfil financiero.
+        <span class="text-xs text-emerald-800">
+          Elige una actividad para ganar XP y mejorar tu perfil financiero.
         </span>
       {% endif %}
     </div>
