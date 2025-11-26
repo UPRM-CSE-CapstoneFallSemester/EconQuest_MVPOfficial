@@ -5,6 +5,8 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Activities, Attempts, StudentProfiles, Modules, GroupMembers, ModuleAssignments, GameSettings
 import json
+from app.models import Missions, MissionProgress
+
 
 from flask import (
     Blueprint, render_template,
@@ -21,7 +23,7 @@ student_bp = Blueprint("student_ui", __name__, url_prefix="/student")
 def _ensure_profile(u):
     # ya lo tienes en otras vistas; lo reutilizamos
     if not getattr(u, "profile", None):
-        p = StudentProfile(
+        p = StudentProfiles(
             user_id=u.id,
             credit_score=620,
             cash_balance=500,
@@ -70,6 +72,8 @@ def dashboard():
     Student dashboard: muestra módulos asignados a los grupos del estudiante.
     Si no hay asignaciones, cae a módulos publicados. También lista actividades de esos módulos.
     """
+    profile = _get_or_create_profile(current_user.id)
+
     # --- 1) grupos del estudiante ---
     my_memberships = GroupMembers.query.filter_by(user_id=current_user.id).all()
     group_ids = [m.group_id for m in my_memberships]
@@ -111,13 +115,72 @@ def dashboard():
             .all()
         )
 
-    return render_template("student/dashboard.html", modules=modules, activities=activities)
+    # misiones (para usar resumen si quieres en el dashboard)
+    mission_rows, mission_summary = _evaluate_missions_for_user(current_user.id)
+
+    return render_template(
+        "student/dashboard.html",
+        modules=modules,
+        activities=activities,
+        profile=profile,
+        mission_summary=mission_summary,
+    )
 
 @student_bp.route("/missions")
 @login_required
 def missions():
-    profile = _ensure_profile(current_user)
-    return render_template("student/placeholder.html", title="Misiones", profile=profile)
+    profile = _get_or_create_profile(current_user.id)
+    rows, summary = _evaluate_missions_for_user(current_user.id)
+
+    return render_template(
+        "student/missions.html",
+        profile=profile,
+        missions_rows=rows,
+        mission_summary=summary,
+    )
+
+@student_bp.route("/missions/<int:mission_id>/collect", methods=["POST"], endpoint="collect_mission")
+@login_required
+def collect_mission(mission_id):
+    profile = _get_or_create_profile(current_user.id)
+    mission = Missions.query.get_or_404(mission_id)
+
+    prog = MissionProgress.query.filter_by(
+        mission_id=mission.id,
+        user_id=current_user.id
+    ).first()
+
+    if not prog or not prog.is_completed:
+        flash("Esta misión todavía no está completa.", "error")
+        return redirect(url_for("student_ui.missions"))
+
+    if prog.is_collected:
+        flash("Ya cobraste la recompensa de esta misión.", "error")
+        return redirect(url_for("student_ui.missions"))
+
+    # aplicar recompensas
+    profile.xp = int((profile.xp or 0) + int(mission.xp_reward or 0))
+    profile.cash_balance = float(profile.cash_balance or 0.0) + float(mission.cash_reward or 0.0)
+
+    # recalcular level-ups usando la misma lógica que las actividades
+    s = get_settings()
+    level_ups = 0
+    while True:
+        need = xp_needed_for_next(int(profile.level or 1), s)
+        if profile.xp >= need:
+            profile.xp -= need
+            profile.level = int(profile.level or 1) + 1
+            level_ups += 1
+        else:
+            break
+
+    prog.is_collected = True
+    prog.collected_at = datetime.utcnow()
+
+    db.session.commit()
+    flash("Recompensa de misión cobrada.", "success")
+    return redirect(url_for("student_ui.missions"))
+
 
 @student_bp.route("/wallet")
 @login_required
@@ -147,7 +210,7 @@ def help_page():
 def _get_or_create_profile(user_id):
     prof = StudentProfiles.query.filter_by(user_id=user_id).first()
     if not prof:
-        prof = StudentProfile(user_id=user_id)
+        prof = StudentProfiles(user_id=user_id)
         db.session.add(prof)
         db.session.commit()
     return prof
@@ -170,27 +233,43 @@ def play_activity(activity_id):
     s = get_settings()
     atype = (a.type or "text").lower()
 
-    # Limit logic
+    # Tipos que se comportan como quiz
+    quiz_like = atype in ("quiz", "scenario", "mcq_sim")
+
+    # --- Gate por nivel del módulo ---
+    profile = _get_or_create_profile(current_user.id)
+    module = Modules.query.get(a.module_id)
+    required_level = (module.level or 1) if module and module.level is not None else None
+    current_level = profile.level or 1
+
+    if required_level is not None and current_level < required_level:
+        flash(
+            f"Necesitas nivel {required_level} para hacer esta actividad. "
+            f"Tu nivel actual es {current_level}.",
+            "error"
+        )
+        return redirect(url_for("student_ui.module_detail", module_id=a.module_id))
+
+    # --- Límite de intentos ---
     used = Attempts.query.filter_by(user_id=current_user.id, activity_id=a.id).count()
     limit = a.attempt_limit if a.attempt_limit is not None else s.max_attempts_default
     blocked = (limit is not None) and (used >= limit)
 
-    # Load content JSON (for quiz/scenario)
+    # --- Cargar contenido JSON ---
     content = {}
     if a.content_json:
-        try: content = json.loads(a.content_json)
-        except Exception: content = {}
+        try:
+            content = json.loads(a.content_json)
+        except Exception:
+            content = {}
 
-    # If blocked, don't accept POST
-    if blocked and flask_request.method == "POST":
-        flash("Attempt limit reached for this activity.", "error")
-        return redirect(url_for("student_ui.play_activity", activity_id=a.id))
-
+    # =================== POST: procesar intento ===================
     if flask_request.method == "POST":
-        profile = StudentProfiles.query.filter_by(user_id=current_user.id).first()
-        if not profile:
-            profile = StudentProfile(user_id=current_user.id)
-            db.session.add(profile)
+        if blocked:
+            flash("Ya alcanzaste el límite de intentos para esta actividad.", "error")
+            return redirect(url_for("student_ui.module_detail", module_id=a.module_id))
+
+        profile = _get_or_create_profile(current_user.id)
 
         score = 0
         delta_credit = 0
@@ -199,38 +278,59 @@ def play_activity(activity_id):
         xp_gain = None
         answers = {}
 
-        if atype in ("quiz","scenario"):
+        if quiz_like:
+            # leer respuestas y acumular efectos
             for idx, q in enumerate(content.get("questions", [])):
                 sel = flask_request.form.get(f"q{idx}")
-                if sel is None: continue
+                if sel is None:
+                    continue
+
                 answers[str(idx)] = sel
+
                 for opt in q.get("options", []):
                     if str(opt.get("key")) == str(sel):
                         score += int(opt.get("points", 0) or 0)
                         delta_credit += int(opt.get("delta_credit", 0) or 0)
                         delta_cash += float(opt.get("delta_cash", 0.0) or 0.0)
                         delta_energy += int(opt.get("delta_energy", 0) or 0)
+
                         if xp_gain is None and opt.get("xp") is not None:
                             xp_gain = int(opt["xp"])
                         break
         else:
+            # actividades tipo texto / lectura
             score = int(a.max_points or 0)
-            xp_gain = a.default_xp or content.get("xp_reward") or a.max_points or 25
+            xp_gain = (
+                a.default_xp
+                or content.get("xp_reward")
+                or a.max_points
+                or 25
+            )
 
+        # Fallback sólido para XP (evita None)
         if xp_gain is None:
-            xp_gain = a.default_xp or content.get("xp_reward") or (a.max_points if a.max_points is not None else 25)
+            xp_gain = (
+                a.default_xp
+                or content.get("xp_reward")
+                or (a.max_points if a.max_points is not None else 25)
+            )
 
-        # Apply effects
+        xp_gain = int(xp_gain)
+
+        # --- Aplicar efectos al perfil ---
         if delta_credit:
-            profile.credit_score = max(300, min(850, (profile.credit_score or 650) + delta_credit))
+            profile.credit_score = max(
+                300,
+                min(850, (profile.credit_score or 650) + delta_credit),
+            )
         if delta_cash:
             profile.cash_balance = (profile.cash_balance or 0.0) + delta_cash
         if delta_energy:
             profile.energy = max(0, (profile.energy or 100) + delta_energy)
 
-        # XP + level up (xp stored as "progress within current level")
+        # --- XP + level up ---
         level_ups = 0
-        profile.xp = int((profile.xp or 0) + int(xp_gain))
+        profile.xp = int((profile.xp or 0) + xp_gain)
         while True:
             need = xp_needed_for_next(int(profile.level or 1), s)
             if profile.xp >= need:
@@ -240,7 +340,7 @@ def play_activity(activity_id):
             else:
                 break
 
-        # Save attempt with answers_json (NOT NULL)
+        # --- Guardar intento ---
         att = Attempts(
             user_id=current_user.id,
             activity_id=a.id,
@@ -252,20 +352,30 @@ def play_activity(activity_id):
         db.session.commit()
 
         flask_session["last_result"] = {
-            "activity_id": a.id, "title": a.title, "score": int(score),
-            "xp": int(xp_gain or 0), "delta_credit": int(delta_credit),
-            "delta_cash": float(delta_cash), "delta_energy": int(delta_energy),
+            "activity_id": a.id,
+            "title": a.title,
+            "score": int(score),
+            "xp": int(xp_gain),
+            "delta_credit": int(delta_credit),
+            "delta_cash": float(delta_cash),
+            "delta_energy": int(delta_energy),
             "level_ups": int(level_ups),
-            "attempts_left": (max(0, (limit - (used + 1))) if limit is not None else None)
+            "attempts_left": (max(0, (limit - (used + 1))) if limit is not None else None),
         }
+
         return redirect(url_for("student_ui.activity_result", activity_id=a.id))
 
-    # GET
+    # =================== GET: mostrar actividad ===================
+    template_name = "student/activity_quiz.html" if quiz_like else "student/activity_text.html"
+
     return render_template(
-        "student/activity_quiz.html" if atype in ("quiz","scenario") else "student/activity_text.html",
-        activity=a, content=content, attempts_used=used,
+        template_name,
+        activity=a,
+        content=content,
+        attempts_used=used,
         attempts_left=(None if limit is None else max(0, limit - used)),
-        attempt_limit=limit, blocked=blocked
+        attempt_limit=limit,
+        blocked=blocked,
     )
 
 
@@ -283,11 +393,145 @@ def activity_result(activity_id):
 @login_required
 def module_detail(module_id):
     module = Modules.query.get_or_404(module_id)
-    activities = Activities.query.filter_by(
-        module_id=module.id, is_published=True
-    ).order_by(Activities.position.asc(), Activities.id.asc()).all()
-    return render_template("student/module_detail.html",
-                           module=module, activities=activities)
+    profile = _get_or_create_profile(current_user.id)
+
+    # --- parsear el JSON del módulo (builder) ---
+    raw = {}
+    if module.content_json:
+        try:
+            raw = json.loads(module.content_json)
+        except Exception:
+            raw = {}
+
+    sections_raw = []
+    if isinstance(raw, dict):
+        sections_raw = raw.get("sections", [])
+
+    module_sections = []
+    for sec in sections_raw:
+        if not isinstance(sec, dict):
+            continue
+
+        t = sec.get("type")
+
+        # Normalizar checklist: items vienen como ["a\nb\nc"]
+        if t == "checklist":
+            items = sec.get("items") or []
+            new_items = []
+            for it in items:
+                if isinstance(it, str):
+                    for line in it.splitlines():
+                        line = line.strip()
+                        if line:
+                            new_items.append(line)
+                else:
+                    new_items.append(str(it))
+            sec["items"] = new_items
+
+        module_sections.append(sec)
+
+    # --- actividades del módulo (solo publicadas) ---
+    activities = (
+        Activities.query
+        .filter_by(module_id=module.id, is_published=True)
+        .order_by(Activities.position.asc(), Activities.id.asc())
+        .all()
+    )
+
+    can_access = (module.level is None) or ((profile.level or 1) >= (module.level or 1))
+
+    return render_template(
+        "student/module_detail.html",
+        module=module,
+        activities=activities,
+        profile=profile,
+        can_access=can_access,
+        module_sections=module_sections,   # <<< IMPORTANTE
+    )
+
+
+def _check_mission_completed(mission, profile, user_id):
+    """Devuelve True si el estudiante cumple la condición de la misión."""
+    t = (mission.condition_type or "").lower()
+    val = mission.condition_value
+
+    # 1) Llegar a cierto nivel
+    if t == "reach_level" and val is not None:
+        return (profile.level or 1) >= int(val)
+
+    # 2) Completar un módulo específico (todas sus actividades)
+    if t == "complete_module" and val is not None:
+        module = Modules.query.get(int(val))
+        if not module:
+            return False
+        total = len(module.activities)
+        if total == 0:
+            return False
+
+        done = (
+            Attempts.query.filter_by(user_id=user_id)
+            .join(Activities)
+            .filter(Activities.module_id == module.id)
+            .count()
+        )
+        return done >= total
+
+    # 3) Completar tu PRIMER módulo (cualquiera)
+    if t == "complete_any_module":
+        modules = Modules.query.all()
+        for m in modules:
+            total = len(m.activities)
+            if total == 0:
+                continue
+            done = (
+                Attempts.query.filter_by(user_id=user_id)
+                .join(Activities)
+                .filter(Activities.module_id == m.id)
+                .count()
+            )
+            if done >= total:
+                return True
+        return False
+
+    return False
+
+
+def _evaluate_missions_for_user(user_id):
+    """Crea/actualiza MissionProgress y devuelve (lista, resumen)."""
+    profile = _get_or_create_profile(user_id)
+    missions = Missions.query.filter_by(is_active=True).order_by(Missions.id.asc()).all()
+
+    rows = []
+    changed = False
+
+    for m in missions:
+        prog = MissionProgress.query.filter_by(mission_id=m.id, user_id=user_id).first()
+        if not prog:
+            prog = MissionProgress(mission_id=m.id, user_id=user_id)
+            db.session.add(prog)
+            changed = True
+
+        completed = _check_mission_completed(m, profile, user_id)
+        if completed and not prog.is_completed:
+            prog.is_completed = True
+            prog.completed_at = datetime.utcnow()
+            changed = True
+
+        rows.append((m, prog))
+
+    if changed:
+        db.session.commit()
+
+    summary = {
+        "total": len(rows),
+        "ready": sum(1 for m, p in rows if p.is_completed and not p.is_collected),
+        "completed": sum(1 for m, p in rows if p.is_completed),
+        "collected": sum(1 for m, p in rows if p.is_collected),
+    }
+    return rows, summary
+
+
+
 
 
 

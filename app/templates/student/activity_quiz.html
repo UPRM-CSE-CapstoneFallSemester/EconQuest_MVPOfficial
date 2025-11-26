@@ -2,11 +2,11 @@
 {% block student_content %}
 
 <div class="max-w-3xl mx-auto">
-  <h1 class="text-2xl font-bold text-emerald-300">{{ activity.title }}</h1>
-  <p class="text-emerald-200/80 mt-1">Type: {{ activity.type or 'quiz' }}</p>
+  <h1 class="text-2xl font-bold text-emerald-800">{{ activity.title }}</h1>
+  <p class="text-emerald-800 mt-1">Type: {{ activity.type or 'quiz' }}</p>
 
   {% if attempt_limit is not none %}
-    <div class="mt-2 text-sm text-emerald-200/80">
+    <div class="mt-2 text-sm text-emerald-800">
       Attempts: {{ attempts_used }}/{{ attempt_limit }}
       {% if attempts_left is not none %} · Left: {{ attempts_left }}{% endif %}
     </div>
@@ -20,12 +20,24 @@
     <form method="post" class="mt-4 space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      {# 1) Fallback robusto para encontrar las preguntas #}
-      {% set questions = (
-          content.get('questions')
-          or content.get('quiz', {}).get('questions')
-          or []
-      ) %}
+        {# 1) Construimos questions dependiendo del formato #}
+        {% if content.get('questions') or content.get('quiz') %}
+          {# Formato normal de quiz (ya existente) #}
+          {% set questions = (
+              content.get('questions')
+              or content.get('quiz', {}).get('questions')
+              or []
+          ) %}
+        {% elif content.get('prompt') and content.get('options') %}
+          {# Formato de scenario como el JSON que enseñaste #}
+          {% set questions = [ {
+            'text': content.prompt,
+            'options': content.options
+          } ] %}
+        {% else %}
+          {% set questions = [] %}
+        {% endif %}
+
 
       {% for q in questions %}
         {% set q_idx = loop.index0 %}

@@ -1,59 +1,160 @@
 {% extends 'admin/layout.html' %}
 {% block admin_content %}
 
-<h1 class="text-2xl font-bold mb-6">Panel de administración</h1>
+<style>
+  .admin-kpi-card{
+    border-radius: 1rem;
+    box-shadow: 0 10px 24px rgba(15,23,42,.08);
+  }
+  .admin-kpi-label{
+    font-size: .8rem;
+  }
+  .admin-quick-link{
+    display:flex;
+    flex-direction:column;
+    gap:.15rem;
+    border-radius: .9rem;
+    padding:.75rem 1rem;
+    background: #f8fafc;
+  }
+  .dark .admin-quick-link{
+    background: #020617;
+  }
+  .admin-quick-link:hover{
+    border-color: rgb(16 185 129);
+    box-shadow:0 10px 24px rgba(16,185,129,.18);
+  }
+</style>
 
-{# ===== KPIs ===== #}
-<div class="grid md:grid-cols-3 gap-4 mb-6">
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">Disponibilidad (última hora)</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ "%.1f%%"|format(stats.availability_pct) }}</div>
-    <div class="text-xs text-slate-500 mt-2">Códigos &lt; 500</div>
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">Panel de administración</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+      Monitorea la salud de EconQuest, gestiona usuarios y ajusta el sistema de XP.
+    </p>
   </div>
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">p95 /student/dashboard</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.p95_ms }} ms</div>
+
+</div>
+
+{# ===== KPIs: salud de plataforma ===== #}
+<div class="grid md:grid-cols-3 gap-4 mb-6">
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
+    <div class="admin-kpi-label text-slate-500">Disponibilidad (última hora)</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">
+      {{ "%.1f%%"|format(stats.availability_pct) }}
+    </div>
+    <div class="text-xs text-slate-500 mt-2">Respuestas con código &lt; 500</div>
+  </div>
+
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
+    <div class="admin-kpi-label text-slate-500">p95 /student/dashboard</div>
+    <div class="text-2xl font-semibold text-emerald-500 mt-1">
+      {{ stats.p95_ms }} ms
+    </div>
     <div class="text-xs text-slate-500 mt-2">Última hora</div>
   </div>
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">Usuarios</div>
+
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
+    <div class="admin-kpi-label text-slate-500">Usuarios</div>
     <div class="text-2xl font-semibold text-emerald-500 mt-1">
-      {{ stats.total_users }} <span class="text-sm text-slate-400">· {{ online }} online</span>
+      {{ stats.total_users }}
+      <span class="text-sm text-slate-400">· {{ online }} online</span>
     </div>
-    <div class="text-xs text-slate-500 mt-2">{{ stats.students }} estudiantes · {{ stats.teachers }} docentes</div>
+    <div class="text-xs text-slate-500 mt-2">
+      {{ stats.students }} estudiantes · {{ stats.teachers }} docentes
+    </div>
   </div>
 </div>
 
-<div class="grid md:grid-cols-3 gap-4 mb-10">
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">Módulos</div>
+{# ===== KPIs: contenido / juego ===== #}
+<div class="grid md:grid-cols-3 gap-4 mb-8">
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
+    <div class="admin-kpi-label text-slate-500">Módulos</div>
     <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.modules }}</div>
     <div class="text-xs text-slate-500 mt-2">{{ stats.published }} publicados</div>
   </div>
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">Actividades</div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
+    <div class="admin-kpi-label text-slate-500">Actividades</div>
     <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.activities }}</div>
     <div class="text-xs text-slate-500 mt-2">Totales</div>
   </div>
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">Intentos</div>
+  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
+    <div class="admin-kpi-label text-slate-500">Intentos</div>
     <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ stats.attempts }}</div>
     <div class="text-xs text-slate-500 mt-2">Histórico</div>
   </div>
 </div>
 
+{# ===== ATAJOS DE ADMINISTRACIÓN ===== #}
+<section class="mb-10">
+  <h2 class="font-semibold mb-3 text-slate-700 dark:text-slate-100">
+    Atajos de administración
+  </h2>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+    <a
+      class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
+      href="{{ url_for('admin.users_view') }}"
+    >
+      <span class="font-semibold">👥 Users & Roles</span>
+      <span class="text-slate-500 dark:text-slate-400">
+        Cambia rápidamente permisos de docentes y estudiantes.
+      </span>
+    </a>
+
+    <a
+      class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
+      href="{{ url_for('admin.data_home') }}"
+    >
+      <span class="font-semibold">📊 Data Browser</span>
+      <span class="text-slate-500 dark:text-slate-400">
+        Explora tablas (módulos, actividades, intentos, grupos…).
+      </span>
+    </a>
+
+    {# OJO: si tu endpoint se llama distinto, cambia 'live_sessions' por el que uses. #}
+    <a
+      class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
+      href="{{ url_for('admin.api_active_sessions') }}"
+    >
+      <span class="font-semibold">🟢 Sesiones en vivo</span>
+      <span class="text-slate-500 dark:text-slate-400">
+        Ver quién está conectado ahora mismo y desde dónde.
+      </span>
+    </a>
+
+    {# OJO: igual aquí, ajusta el endpoint si tu ruta de settings tiene otro nombre. #}
+    <a
+      class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
+      href="{{ url_for('admin.settings_view') }}"
+    >
+      <span class="font-semibold">🎮 Game / XP Settings</span>
+      <span class="text-slate-500 dark:text-slate-400">
+        Ajusta curva de XP y límite de intentos por actividad.
+      </span>
+    </a>
+  </div>
+</section>
+
 {# ===== USUARIOS RECIENTES ===== #}
 <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-6 rounded-2xl shadow mb-10">
   <div class="flex items-center justify-between">
-    <h2 class="font-semibold">Usuarios recientes</h2>
-    <a class="px-3 py-2 rounded bg-emerald-600 text-white" href="{{ url_for('admin.users_view') }}">Gestionar roles</a>
+    <h2 class="font-semibold">Usuarios registrados</h2>
+    <a class="px-3 py-2 rounded bg-emerald-600 text-white" href="{{ url_for('admin.users_view') }}">
+      Gestionar roles
+    </a>
   </div>
   <table class="mt-3 w-full text-sm">
-    <thead><tr class="text-left"><th>Nombre</th><th>Email</th><th>Rol</th><th>Creado</th></tr></thead>
+    <thead>
+      <tr class="text-left">
+        <th>Nombre</th><th>Email</th><th>Rol</th><th>Creado</th>
+      </tr>
+    </thead>
     <tbody>
       {% for u in recent_users %}
       <tr class="border-t border-slate-200 dark:border-slate-700">
-        <td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td>
+        <td>{{ u.name }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
         <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
       </tr>
       {% endfor %}
@@ -61,41 +162,5 @@
   </table>
 </div>
 
-{# ===== SETTINGS RESUMEN ===== #}
-{% if settings %}
-<div class="grid md:grid-cols-3 gap-4 mb-10">
-  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">XP Base</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ settings.xp_base }}</div>
-    <div class="text-xs text-slate-500 mt-2">Usado para subir de nivel</div>
-  </div>
-  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">XP Growth</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ settings.xp_growth }}</div>
-    <div class="text-xs text-slate-500 mt-2">Incremento por nivel</div>
-  </div>
-  <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl card">
-    <div class="text-sm text-slate-500">Attempts (default)</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">{{ settings.max_attempts_default }}</div>
-    <div class="text-xs text-slate-500 mt-2">Límite por actividad</div>
-  </div>
-</div>
-{% endif %}
-
-{# ===== ATAJOS AL DATA BROWSER (todas las tablas) ===== #}
-<section class="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
-  <div class="flex items-center justify-between mb-3">
-    <h2 class="font-semibold">Data Browser</h2>
-    <a class="px-3 py-2 rounded border dark:border-slate-700" href="{{ url_for('admin.data_home') }}">Ver todo</a>
-  </div>
-  <ul class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-    {% for key, Model in ALLOWED_MODELS.items() %}
-    <li>
-      <a class="block px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:shadow"
-         href="{{ url_for('admin.data_table', model=key) }}">{{ key|replace('_',' ')|title }}</a>
-    </li>
-    {% endfor %}
-  </ul>
-</section>
 
 {% endblock %}
