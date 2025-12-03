@@ -115,82 +115,55 @@
   <div class="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-800/40 mb-6">
     <div class="flex items-center justify-between mb-3">
       <h2 class="font-semibold text-emerald-200">Actividades</h2>
-      <details class="bg-emerald-900/30 rounded-xl px-4 py-2 border border-emerald-800/40">
-        <summary class="cursor-pointer text-emerald-200">➕ Crear actividad</summary>
-        <form method="post" action="{{ url_for('teacher.activity_create') }}" class="mt-3 grid md:grid-cols-2 gap-3">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <select class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="module_id" required>
-            <option value="">Selecciona módulo</option>
-            {% for m in modules %}<option value="{{ m.id }}">{{ m.title }}</option>{% endfor %}
-          </select>
-          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="title" placeholder="Título" required>
 
-          {# Type selector (no free text) #}
-          <select class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="type" id="create-type">
-            <option value="quiz" selected>quiz</option>
-            <option value="scenario">scenario</option>
-            <option value="text">text</option>
-          </select>
-
-          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="max_points" placeholder="Puntos máx. (ej. 100)">
-          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="position" placeholder="Orden (ej. 1)">
-          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="attempt_limit" placeholder="Attempt limit (e.g., 3)">
-          <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="default_xp" placeholder="Default XP (e.g., 25)" value="25">
-
-          <label class="text-sm flex items-center gap-2"><input type="checkbox" name="is_published"> Publicada</label>
-
-          {# Hidden JSON field (auto-filled by JS) #}
-          <input type="hidden" name="content_json" id="create-content-json">
-
-          {# QUIZ editor (create) #}
-          <div id="create-quiz-editor" class="mt-3 hidden md:col-span-2">
-            <div class="flex items-center justify-between">
-              <div class="text-sm font-semibold">Questions</div>
-              <button type="button" id="btn-create-add-question" class="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-sm">+ Add question</button>
-            </div>
-            <div id="create-quiz-questions" class="mt-2 space-y-3"></div>
-            <p class="text-xs text-emerald-300/80 mt-1">Add at least one option and mark one as correct.</p>
-          </div>
-
-          {# SCENARIO editor (create) #}
-          <div id="create-scenario-editor" class="mt-3 hidden md:col-span-2">
-            <label class="block text-sm mb-1">Prompt / Situation</label>
-            <input type="text" id="create-scn-prompt" class="w-full rounded bg-slate-900 border border-slate-700 px-3 py-2" placeholder="Example: What is a fixed expense?">
-            <div class="mt-3 flex items-center justify-between">
-              <div class="text-sm font-semibold">Options</div>
-              <div class="flex items-center gap-2">
-                <select id="create-scn-preset" class="rounded bg-slate-900 border border-slate-700 px-2 py-1 text-sm">
-                  <option value="">— insert from bank —</option>
-                  <option value='{"label":"Monthly rent","delta":10}'>Monthly rent (+10)</option>
-                  <option value='{"label":"Car payment","delta":8}'>Car payment (+8)</option>
-                  <option value='{"label":"Eating out","delta":-5}'>Eating out (−5)</option>
-                  <option value='{"label":"Impulse shopping","delta":-7}'>Impulse shopping (−7)</option>
-                </select>
-                <button type="button" id="btn-create-insert-preset" class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-sm">Insert</button>
-                <button type="button" id="btn-create-add-option" class="px-2 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-sm">+ Add option</button>
-              </div>
-            </div>
-            <div id="create-scn-options" class="mt-2 space-y-2"></div>
-            <p class="text-xs text-emerald-300/80 mt-1">Each option has a numeric delta (positive = good, negative = bad).</p>
-          </div>
-
-          <div class="md:col-span-2">
-            <button class="px-3 py-2 rounded bg-emerald-600 text-white">Crear</button>
-          </div>
-        </form>
-      </details>
+      {# Botón que abre el builder de actividades (similar al de módulos) #}
+      {% if modules %}
+        <a href="{{ url_for('teacher.activities_builder', module_id=modules[0].id) }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                  bg-emerald-900/60 border border-emerald-500/60
+                  text-emerald-100 text-sm hover:bg-emerald-800 hover:border-emerald-400">
+          <span class="text-xs">▶</span>
+          <span>＋ Crear actividad</span>
+        </a>
+      {% else %}
+        <span class="text-xs text-emerald-300/80">
+          Crea primero un módulo para poder añadir actividades.
+        </span>
+      {% endif %}
     </div>
 
     <div class="grid md:grid-cols-2 gap-3">
       {% for a in recent_activities %}
-        <div class="rounded-xl bg-emerald-900/30 border border-emerald-800/40 p-4">
-          <div class="font-semibold text-emerald-100">{{ a.title }}</div>
-          <div class="text-xs text-emerald-200/80">Tipo {{ a.type }} · Puntos {{ a.max_points or 0 }}</div>
 
-          <details class="mt-3">
-            <summary class="cursor-pointer text-emerald-300 text-sm">Editar</summary>
+        {% set lvl = a.position or 1 %}
+        <div class="rounded-2xl bg-emerald-950/70 border border-emerald-800/70 p-4 flex flex-col gap-3">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-[11px] uppercase tracking-wide text-emerald-300/70">
+                Actividad #{{ a.id }} · {{ a.module.title if a.module else 'Sin módulo' }}
+              </div>
+              <div class="text-sm font-semibold text-emerald-50">
+                {{ a.title }}
+              </div>
+              <p class="mt-1 text-xs text-emerald-100/80">
+                Tipo {{ a.type or 'quiz' }} · Máx {{ a.max_points or 0 }} pts · XP base {{ a.default_xp or 0 }}
+              </p>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <span class="px-2 py-1 rounded-full text-[11px]
+                           {{ 'bg-emerald-900/70 text-emerald-300 border border-emerald-500/60' if a.is_published else 'bg-slate-900/70 text-slate-300 border border-slate-500/60' }}">
+                {{ 'Publicado' if a.is_published else 'Borrador' }}
+              </span>
+              <span class="px-2 py-1 rounded-full text-[11px] bg-slate-900/70 text-emerald-200 border border-slate-600/70">
+                Orden {{ lvl }}
+              </span>
+            </div>
+          </div>
 
-            <form method="post" action="{{ url_for('teacher.activity_update', activity_id=a.id) }}" class="mt-2 grid md:grid-cols-2 gap-2">
+          <details class="mt-2">
+            <summary class="cursor-pointer text-emerald-300 text-xs">Editar actividad</summary>
+
+            <form method="post" action="{{ url_for('teacher.activity_update', activity_id=a.id) }}" class="mt-2 grid md:grid-cols-2 gap-2 text-xs">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="title" value="{{ a.title }}">
               <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="type" value="{{ a.type }}">
@@ -198,12 +171,12 @@
               <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="position" value="{{ a.position or '' }}">
               <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="attempt_limit" value="{{ a.attempt_limit or '' }}" placeholder="Attempt limit">
               <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="default_xp" value="{{ a.default_xp or '' }}" placeholder="Default XP">
-              <label class="text-sm flex items-center gap-2"><input type="checkbox" name="is_published" {{ 'checked' if a.is_published else '' }}> Publicada</label>
+              <label class="text-sm flex items-center gap-2">
+                <input type="checkbox" name="is_published" {{ 'checked' if a.is_published else '' }}> Publicada
+              </label>
 
-              {# Hidden JSON to submit #}
               <input type="hidden" name="content_json" id="edit-json-{{ a.id }}">
 
-              {# Editor mount for this activity #}
               <div
                 class="content-editor-mount md:col-span-2"
                 data-activity-id="{{ a.id }}"
@@ -212,23 +185,24 @@
               </div>
 
               <div class="md:col-span-2">
-                <button class="px-3 py-2 rounded bg-emerald-600 text-white">Guardar</button>
+                <button class="px-3 py-2 rounded bg-emerald-600 text-white text-xs">Guardar</button>
               </div>
             </form>
 
             <form method="post" action="{{ url_for('teacher.activity_delete', activity_id=a.id) }}" onsubmit="return confirm('¿Eliminar actividad?')" class="mt-2">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="px-3 py-2 rounded bg-red-600 text-white">Eliminar</button>
+              <button class="px-3 py-2 rounded bg-red-600 text-white text-xs">Eliminar</button>
             </form>
           </details>
         </div>
+
       {% else %}
         <div class="text-emerald-200/80">No hay actividades aún.</div>
       {% endfor %}
     </div>
   </div>
 
-      {# ===== Misiones (retos de progreso) ===== #}
+  {# ===== Misiones (retos de progreso) ===== #}
   <a id="missions"></a>
   <div class="bg-emerald-900/20 rounded-2xl p-5 border border-emerald-800/40 mb-6">
     <div class="flex items-center justify-between mb-3">
@@ -516,7 +490,7 @@
   </div>
 </div>
 
-{# ==================== SCRIPT: Visual JSON editors ==================== #}
+{# ==================== SCRIPT: Visual JSON editors (solo EDIT) ==================== #}
 <script>
 /* Small helper to create DOM nodes */
 const h = (tag, attrs = {}, children = []) => {
@@ -534,156 +508,6 @@ const h = (tag, attrs = {}, children = []) => {
   return el;
 };
 
-/* ===== CREATE editor ===== */
-(function initCreateEditor(){
-  const form = document.querySelector('form[action="{{ url_for("teacher.activity_create") }}"]');
-  if (!form) return;
-
-  const typeSel   = document.getElementById('create-type');
-  const hidden    = document.getElementById('create-content-json');
-
-  const quizBox   = document.getElementById('create-quiz-editor');
-  const qList     = document.getElementById('create-quiz-questions');
-  const addQBtn   = document.getElementById('btn-create-add-question');
-
-  const scnBox    = document.getElementById('create-scenario-editor');
-  const scnPrompt = document.getElementById('create-scn-prompt');
-  const scnList   = document.getElementById('create-scn-options');
-  const addOptBtn = document.getElementById('btn-create-add-option');
-  const presetSel = document.getElementById('create-scn-preset');
-  const insertPresetBtn = document.getElementById('btn-create-insert-preset');
-
-  // Show relevant editor for the selected type
-  const setMode = (t) => {
-    quizBox.classList.toggle('hidden', t !== 'quiz');
-    scnBox.classList.toggle('hidden',  t !== 'scenario');
-  };
-  setMode(typeSel.value);
-  typeSel.addEventListener('change', () => setMode(typeSel.value));
-
-  // Build option row
-  // Build option row (CREATE)
-function makeOptionRow({label='', correct=false, delta=0}={}, forQuiz=false){
-  const row = h('div', { class:'option-row grid grid-cols-12 gap-2 items-center' });
-
-  // Text
-  const txt = h('input', {
-    type:'text',
-    class:'col-span-6 rounded bg-slate-900 border border-slate-700 px-3 py-2',
-    placeholder:'Option text',
-    value:label
-  });
-
-  // Number (delta or just placeholder for quiz)
-  const num = h('input', {
-    type:'number', step:'1',
-    class:'col-span-2 rounded bg-slate-900 border border-slate-700 px-3 py-2 text-right',
-    placeholder: forQuiz ? '0' : 'Δ',
-    value: delta ?? 0
-  });
-
-  // Correct checkbox (only for quiz)
-  let correctWrap=null, correctCb=null;
-  if (forQuiz){
-    correctCb = h('input', { type:'checkbox', ...(correct ? { checked:true } : {}) });
-    correctWrap = h(
-      'label',
-      { class:'col-span-3 flex items-center gap-2 text-sm text-emerald-100 whitespace-nowrap' },
-      [correctCb, 'Correct answer']
-    );
-  } else {
-    // spacer to keep delete aligned on non-quiz rows
-    correctWrap = h('div', { class:'col-span-3' });
-  }
-
-  // Delete
-  const del = h(
-    'button',
-    { type:'button',
-      class:'col-span-1 justify-self-end h-9 px-3 rounded bg-rose-700 hover:bg-rose-600 text-white text-sm'
-    },
-    ['✕']
-  );
-  del.addEventListener('click', () => row.remove());
-
-  row.append(txt, num, correctWrap, del);
-
-  // Value extractor
-  row._get = () => ({ label: txt.value.trim(), delta: Number(num.value || 0), correct: !!correctCb?.checked });
-  return row;
-}
-
-
-  // Build question block
-  function makeQuestionBlock(init=null){
-    const box = h('div', { class:'rounded border border-slate-700 p-3 bg-slate-900/40' });
-    const head = h('div', { class:'flex items-center justify-between mb-2' }, [
-      h('div', { class:'text-sm font-medium text-emerald-100' }, ['Question']),
-      h('div', { class:'flex items-center gap-2' }, [
-        h('button', { type:'button', class:'px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-xs js-add' }, ['+ option']),
-        h('button', { type:'button', class:'px-2 py-1 rounded bg-rose-700 hover:bg-rose-600 text-white text-xs js-del' }, ['Remove'])
-      ])
-    ]);
-    const prompt = h('input', { type:'text', class:'w-full rounded bg-slate-900 border border-slate-700 px-3 py-2 js-prompt', placeholder:'Question text' });
-    const pts    = h('input', { type:'number', step:'1', class:'w-36 rounded bg-slate-900 border border-slate-700 px-3 py-2 mt-2 js-pts', placeholder:'Max points' });
-    const list   = h('div', { class:'mt-2 space-y-2 js-list' });
-
-    box.append(head, prompt, pts, list);
-
-    const addBtn = head.querySelector('.js-add');
-    const delBtn = head.querySelector('.js-del');
-    addBtn.addEventListener('click', () => list.appendChild(makeOptionRow({}, true)));
-    delBtn.addEventListener('click', () => box.remove());
-
-    if (init){
-      prompt.value = init.prompt || init.text || '';
-      pts.value = init.max_points ?? 0;
-      (init.options || []).forEach(o => list.appendChild(makeOptionRow({label: o.text || o.label || '', correct: !!o.correct}, true)));
-    } else {
-      addBtn.click();
-    }
-
-    box._get = () => ({
-      prompt: prompt.value.trim(),
-      max_points: Number(pts.value || 0),
-      options: [...list.children].map(r => {
-        const v = r._get?.() || {};
-        return { text: v.label || '', correct: !!v.correct };
-      })
-    });
-    return box;
-  }
-
-  // Wire up buttons (create)
-  addQBtn?.addEventListener('click', () => qList.appendChild(makeQuestionBlock()));
-  addOptBtn?.addEventListener('click', () => scnList.appendChild(makeOptionRow({}, false)));
-  insertPresetBtn?.addEventListener('click', () => {
-    if (!presetSel.value) return;
-    try { const o = JSON.parse(presetSel.value); scnList.appendChild(makeOptionRow({label:o.label, delta:o.delta}, false)); } catch(e){}
-  });
-
-  // Serialize JSON on submit
-  form.addEventListener('submit', () => {
-    const t = typeSel.value;
-    let payload = {};
-    if (t === 'quiz'){
-      const questions = [...qList.children].map(b => b._get?.()).filter(Boolean);
-      payload = { questions };
-    } else if (t === 'scenario'){
-      const options = [...scnList.children].map(r => r._get?.()).filter(Boolean);
-      payload = {
-        prompt: scnPrompt.value.trim(),
-        options: options.map(o => ({ label:o.label, delta: Number(o.delta || 0) }))
-      };
-    } else {
-      payload = { body: "" };
-    }
-    hidden.value = JSON.stringify(payload);
-  });
-})();
-</script>
-
-<script>
 /* ===== EDIT editors (per activity) ===== */
 (function initEditEditors(){
   const mounts = document.querySelectorAll('.content-editor-mount');
@@ -724,26 +548,26 @@ function makeOptionRow({label='', correct=false, delta=0}={}, forQuiz=false){
         `;
         const optList = box.querySelector('.js-opt-list');
         const addO = () => {
-  const row = document.createElement('div');
-  row.className = 'option-row grid grid-cols-12 gap-2 items-center';
-  row.innerHTML = `
-    <input type="text"
-           class="col-span-6 rounded bg-slate-900 border border-slate-700 px-3 py-2"
-           placeholder="Option text">
-    <input type="number"
-           class="col-span-2 rounded bg-slate-900 border border-slate-700 px-3 py-2 text-right"
-           placeholder="0" value="0">
-    <label class="col-span-3 flex items-center gap-2 text-sm text-emerald-100 whitespace-nowrap">
-      <input type="checkbox"> Correct answer
-    </label>
-    <button type="button"
-            class="col-span-1 justify-self-end h-9 px-3 rounded bg-rose-700 hover:bg-rose-600 text-white text-sm">
-      ✕
-    </button>
-  `;
-  row.querySelector('button').addEventListener('click', () => row.remove());
-  optList.appendChild(row);
-};
+          const row = document.createElement('div');
+          row.className = 'option-row grid grid-cols-12 gap-2 items-center';
+          row.innerHTML = `
+            <input type="text"
+                   class="col-span-6 rounded bg-slate-900 border border-slate-700 px-3 py-2"
+                   placeholder="Option text">
+            <input type="number"
+                   class="col-span-2 rounded bg-slate-900 border border-slate-700 px-3 py-2 text-right"
+                   placeholder="0" value="0">
+            <label class="col-span-3 flex items-center gap-2 text-sm text-emerald-100 whitespace-nowrap">
+              <input type="checkbox"> Correct answer
+            </label>
+            <button type="button"
+                    class="col-span-1 justify-self-end h-9 px-3 rounded bg-rose-700 hover:bg-rose-600 text-white text-sm">
+              ✕
+            </button>
+          `;
+          row.querySelector('button').addEventListener('click', () => row.remove());
+          optList.appendChild(row);
+        };
 
         box.querySelector('.js-add-opt').addEventListener('click', addO);
         box.querySelector('.js-del-q').addEventListener('click', () => box.remove());
@@ -782,7 +606,7 @@ function makeOptionRow({label='', correct=false, delta=0}={}, forQuiz=false){
             const correct = row.querySelector('input[type="checkbox"]').checked;
             return { text: label, correct };
           });
-        return { prompt, max_points: pts, options };
+          return { prompt, max_points: pts, options };
         });
         hidden.value = JSON.stringify({ questions });
       });

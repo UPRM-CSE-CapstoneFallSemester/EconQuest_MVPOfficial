@@ -173,14 +173,6 @@
         <div class="k">💵 <span class="label">Efectivo</span></div>
         <div class="v">$ {{ (profile.cash_balance or 0)|round(0) }}</div>
       </li>
-      <li>
-        <div class="k">💼 <span class="label">Salario</span></div>
-        <div class="v">$ {{ (profile.salary_monthly or 0)|round(0) }} / mes</div>
-      </li>
-      <li>
-        <div class="k">🔋 <span class="label">Energía</span></div>
-        <div class="v">{{ profile.energy or 0 }}</div>
-      </li>
     </ul>
 
     <div class="hint">

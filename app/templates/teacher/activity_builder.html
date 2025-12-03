@@ -1,64 +1,148 @@
 {% extends 'teacher/layout.html' %}
 {% block teacher_content %}
-<h1 class="text-2xl font-semibold text-emerald-200 mb-2">New MCQ Game</h1>
-<p class="text-emerald-300 mb-6">Module: <span class="font-semibold">{{ module.title }}</span></p>
 
-<form id="builderForm" method="post" class="space-y-4 max-w-4xl">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="max-w-6xl mx-auto text-slate-50 space-y-6">
 
-  <div class="grid md:grid-cols-3 gap-4">
-    <label class="block text-sm text-emerald-200">Activity title
-      <input id="title" name="title" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
-             placeholder="Car Buying 101">
-    </label>
+  <!-- Header -->
+  <header class="flex items-baseline justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-emerald-200">Nuevo juego de selección múltiple</h1>
+      <p class="text-emerald-300 mt-1">
+        Módulo: <span class="font-semibold">{{ module.title }}</span>
+      </p>
+    </div>
+  </header>
 
-    <label class="block text-sm text-emerald-200">Position
-      <input id="position" name="position" type="number" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2" value="0">
-    </label>
+  <!-- Main grid: left = info + questions, right = JSON panel -->
+  <div class="grid lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)] gap-6">
 
-    <label class="block text-sm text-emerald-200">Max points
-      <input id="max_points" name="max_points" type="number" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2" value="100">
-    </label>
+    <!-- LEFT COLUMN -->
+    <form id="builderForm" method="post" class="space-y-5">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- ==== Información de la actividad ==== -->
+      <section class="rounded-2xl bg-emerald-950/40 border border-emerald-800/60 shadow-lg shadow-black/40">
+        <div class="border-b border-emerald-800/60 px-5 py-3">
+          <h2 class="text-emerald-200 font-semibold text-lg">Información de la actividad</h2>
+          <p class="text-xs text-emerald-300/80 mt-1">
+            Título visible para el estudiante, orden dentro del módulo y puntos máximos.
+          </p>
+        </div>
+
+        <div class="px-5 py-4 space-y-4">
+          <div class="grid md:grid-cols-3 gap-4">
+            <label class="block text-sm text-emerald-200">Título de la actividad
+              <input id="title" name="title"
+                     class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                     placeholder="Ej. Conceptos clave de ahorro">
+            </label>
+
+            <label class="block text-sm text-emerald-200">Orden en el módulo
+              <input id="position" name="position" type="number"
+                     class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                     value="0">
+            </label>
+
+            <label class="block text-sm text-emerald-200">Puntos máximos
+              <input id="max_points" name="max_points" type="number"
+                     class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                     value="100">
+            </label>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4">
+            <label class="block text-sm text-emerald-200">XP al completar
+              <input id="xp_on_finish" name="xp_on_finish" type="number"
+                     class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                     value="120">
+            </label>
+
+            <label class="inline-flex items-center gap-2 text-sm text-emerald-200 mt-6 md:mt-7">
+              <input name="is_published" type="checkbox"
+                     class="h-4 w-4 rounded border-emerald-700 bg-emerald-950/60">
+              Publicada para estudiantes
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==== Preguntas y opciones ==== -->
+      <section class="rounded-2xl bg-emerald-950/40 border border-emerald-800/60 shadow-lg shadow-black/40">
+        <div class="border-b border-emerald-800/60 px-5 py-3 flex items-center justify-between">
+          <div>
+            <h2 class="text-emerald-200 font-semibold text-lg">Contenido de la actividad</h2>
+            <p class="text-xs text-emerald-300/80 mt-1">
+              Añade preguntas cortas con varias opciones. Marca efectos en crédito, cash, salario, energía y XP.
+            </p>
+          </div>
+          <button type="button" id="addQuestionBtn"
+                  class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm shadow-md shadow-emerald-900/60">
+            + Añadir pregunta
+          </button>
+        </div>
+
+        <div id="questionsWrap" class="px-5 py-4 space-y-4">
+          {# se llena dinámicamente vía JS #}
+        </div>
+
+        <div class="border-t border-emerald-800/60 px-5 py-3 flex gap-2">
+          <button type="button" id="buildBtn"
+                  class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/40 text-sm">
+            Actualizar vista previa
+          </button>
+          <button id="saveBtn"
+                  class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
+            Guardar actividad
+          </button>
+          <a href="{{ url_for('teacher.dashboard') }}#activities"
+             class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/40 text-sm">
+            Cancelar
+          </a>
+        </div>
+      </section>
+
+      <!-- Hidden JSON for submit -->
+      <textarea id="content_json" name="content_json" class="hidden"></textarea>
+    </form>
+
+    <!-- RIGHT COLUMN: JSON panel -->
+    <aside class="space-y-4">
+      <section class="rounded-2xl bg-slate-950/70 border border-emerald-800/60 shadow-lg shadow-black/60">
+        <div class="px-4 py-3 border-b border-emerald-800/60 flex items-center justify-between">
+          <div>
+            <h2 class="text-emerald-200 font-semibold text-sm">JSON de la actividad</h2>
+            <p class="text-[11px] text-emerald-300/80 mt-1">
+              Esto es lo que se guarda en <code>content_json</code>. Úsalo para depurar o exportar.
+            </p>
+          </div>
+          <button type="button"
+                  class="text-[11px] px-2 py-1 rounded bg-emerald-700/70 hover:bg-emerald-600 text-white"
+                  onclick="navigator.clipboard?.writeText(document.getElementById('preview').value || '')">
+            Copiar
+          </button>
+        </div>
+        <div class="px-4 py-3">
+          <textarea id="preview"
+                    class="w-full h-64 rounded bg-black/70 border border-emerald-800/60 p-2 font-mono text-[11px] text-emerald-200"
+                    readonly></textarea>
+        </div>
+      </section>
+
+      <section class="rounded-2xl bg-emerald-950/40 border border-emerald-800/60 p-4 text-xs text-emerald-200/85 space-y-2">
+        <h3 class="font-semibold text-emerald-300 text-sm">Tips para buenas actividades</h3>
+        <ul class="list-disc pl-4 space-y-1">
+          <li>Preguntas cortas y claras; evita párrafos muy largos en el enunciado.</li>
+          <li>Usa efectos pequeños (±5, ±10) para representar decisiones del mundo real.</li>
+          <li>Incluye al menos una opción con feedback positivo y otra con feedback de error.</li>
+          <li>Piensa en cómo esta actividad conecta con el módulo: IVU, renta, carro, gastos fijos, etc.</li>
+        </ul>
+      </section>
+    </aside>
   </div>
-
-  <div class="grid md:grid-cols-3 gap-4">
-    <label class="block text-sm text-emerald-200">XP on finish
-      <input id="xp_on_finish" name="xp_on_finish"
-             class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
-             type="number" value="120">
-    </label>
-    <label class="block text-sm text-emerald-200">Published?
-      <input name="is_published" type="checkbox" class="ml-2 align-middle">
-    </label>
-  </div>
-
-  <hr class="border-emerald-800/60 my-4">
-
-  <div class="flex items-center justify-between">
-    <h2 class="text-xl font-semibold text-emerald-200">Questions</h2>
-    <button type="button" id="addQuestionBtn"
-            class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white">+ Add question</button>
-  </div>
-
-  <div id="questionsWrap" class="space-y-4"></div>
-
-  <!-- Preview + hidden JSON -->
-  <div>
-    <label class="block text-sm text-emerald-200 mb-1">Preview JSON</label>
-    <textarea id="preview" class="w-full h-48 rounded bg-black/40 border border-emerald-800/60 p-2 font-mono text-emerald-200" readonly></textarea>
-    <textarea id="content_json" name="content_json" class="hidden"></textarea>
-  </div>
-
-  <div class="flex gap-2">
-    <button type="button" id="buildBtn" class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/30">Preview</button>
-    <button id="saveBtn" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white">Save activity</button>
-    <a href="{{ url_for('teacher.activities_builder', module_id=module.id) }}" class="px-4 py-2 rounded-xl border border-emerald-700/70 hover:bg-emerald-900/30">Cancel</a>
-  </div>
-</form>
+</div>
 
 <script>
 (function(){
-  let qCounter = 0;
   let questions = [];
 
   function newId(prefix){ return prefix + "_" + Math.random().toString(36).slice(2,8); }
@@ -76,6 +160,7 @@
 
   function addChoice(qid){
     const q = questions.find(x => x.id === qid);
+    if (!q) return;
     q.choices.push({
       id: newId("c"),
       text: "",
@@ -88,23 +173,30 @@
 
   function removeChoice(qid, idx){
     const q = questions.find(x => x.id === qid);
+    if (!q) return;
     q.choices.splice(idx,1);
     render();
   }
 
   function updateField(path, value){
-    // path: ["q", qid, "text"] or ["c", qid, idx, "effects", "credit_score"]
+    // path: ["q", qid, "text"]  or  ["c", qid, idx, "effects", "credit_score"]
     if(path[0] === "q"){
       const q = questions.find(x => x.id === path[1]);
+      if(!q) return;
       if(path[2] === "text") q.text = value;
     } else if(path[0] === "c"){
       const q = questions.find(x => x.id === path[1]);
+      if(!q) return;
       const c = q.choices[path[2]];
+      if(!c) return;
+
       if(path[3] === "text") c.text = value;
-      else if(path[3] === "points") c.points = parseInt(value||0);
+      else if(path[3] === "points") c.points = parseInt(value || 0);
       else if(path[3] === "explain") c.explain = value;
       else if(path[3] === "effects"){
-        c.effects[path[4]] = value === "" ? 0 : (path[4]==="cash_balance"||path[4]==="salary_monthly" ? parseFloat(value) : parseInt(value));
+        const key = path[4];
+        const isFloat = (key === "cash_balance" || key === "salary_monthly");
+        c.effects[key] = value === "" ? 0 : (isFloat ? parseFloat(value) : parseInt(value));
       }
     }
   }
@@ -114,52 +206,73 @@
     wrap.innerHTML = "";
     questions.forEach((q, qi) => {
       const box = document.createElement("div");
-      box.className = "p-4 rounded-xl bg-emerald-900/30 border border-emerald-800/60";
+      box.className = "p-4 rounded-xl bg-emerald-900/40 border border-emerald-800/70 space-y-3";
+
       box.innerHTML = `
         <div class="flex items-start justify-between gap-2">
-          <label class="block text-sm text-emerald-200 flex-1">Question ${qi+1}
-            <input class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
-                   value="${q.text.replaceAll('"','&quot;')}" data-path="q|${q.id}|text">
+          <label class="block text-sm text-emerald-200 flex-1">
+            Pregunta ${qi+1}
+            <input class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                   value="${(q.text || "").replaceAll('"','&quot;')}"
+                   data-path="q|${q.id}|text">
           </label>
           <button type="button" data-act="remove_q" data-q="${q.id}"
-                  class="mt-6 px-3 py-1 rounded bg-red-700/70 hover:bg-red-600 text-white">Remove</button>
+                  class="mt-6 px-3 py-1 rounded bg-red-700/80 hover:bg-red-600 text-white text-xs">
+            Eliminar
+          </button>
         </div>
-        <div class="mt-3 space-y-2" data-choices="${q.id}">
+
+        <div class="space-y-2" data-choices="${q.id}">
           ${q.choices.map((c,ci)=>`
-            <div class="p-3 rounded bg-black/20 border border-emerald-800/40">
+            <div class="p-3 rounded-lg bg-black/20 border border-emerald-800/60 space-y-2">
               <div class="grid md:grid-cols-2 gap-2">
-                <label class="block text-sm text-emerald-200">Choice text
-                  <input class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
-                         value="${c.text.replaceAll('"','&quot;')}" data-path="c|${q.id}|${ci}|text">
+                <label class="block text-sm text-emerald-200">Texto de la opción
+                  <input class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                         value="${(c.text || "").replaceAll('"','&quot;')}"
+                         data-path="c|${q.id}|${ci}|text">
                 </label>
-                <label class="block text-sm text-emerald-200">Points
-                  <input type="number" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
-                         value="${c.points}" data-path="c|${q.id}|${ci}|points">
+                <label class="block text-sm text-emerald-200">Puntos
+                  <input type="number"
+                         class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                         value="${c.points}"
+                         data-path="c|${q.id}|${ci}|points">
                 </label>
               </div>
-              <label class="block text-sm text-emerald-200 mt-2">Explain (optional)
-                <input class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-3 py-2"
-                       value="${(c.explain||'').replaceAll('"','&quot;')}" data-path="c|${q.id}|${ci}|explain">
+
+              <label class="block text-sm text-emerald-200">Explicación / feedback (opcional)
+                <input class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-3 py-2 text-sm"
+                       value="${(c.explain || "").replaceAll('"','&quot;')}"
+                       data-path="c|${q.id}|${ci}|explain">
               </label>
 
               <div class="grid md:grid-cols-5 gap-2 mt-2">
                 ${["credit_score","cash_balance","salary_monthly","energy","xp"].map(k=>`
-                  <label class="block text-xs text-emerald-200">${k}
-                    <input type="number" class="mt-1 w-full rounded bg-emerald-950/40 border border-emerald-800/60 px-2 py-1"
-                           value="${c.effects[k]}" data-path="c|${q.id}|${ci}|effects|${k}">
+                  <label class="block text-[11px] text-emerald-200">
+                    ${k}
+                    <input type="number"
+                           class="mt-1 w-full rounded bg-emerald-950/60 border border-emerald-800/70 px-2 py-1 text-xs"
+                           value="${c.effects[k]}"
+                           data-path="c|${q.id}|${ci}|effects|${k}">
                   </label>
                 `).join("")}
               </div>
 
-              <div class="mt-2">
-                <button type="button" class="px-3 py-1 rounded bg-red-700/70 hover:bg-red-600 text-white"
-                        data-act="remove_c" data-q="${q.id}" data-i="${ci}">Remove choice</button>
+              <div class="pt-2">
+                <button type="button"
+                        class="px-3 py-1 rounded bg-red-700/80 hover:bg-red-600 text-white text-xs"
+                        data-act="remove_c" data-q="${q.id}" data-i="${ci}">
+                  Eliminar opción
+                </button>
               </div>
             </div>
           `).join("")}
         </div>
-        <button type="button" class="mt-2 px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white"
-                data-act="add_c" data-q="${q.id}">+ Add choice</button>
+
+        <button type="button"
+                class="mt-1 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
+                data-act="add_c" data-q="${q.id}">
+          + Añadir opción
+        </button>
       `;
       wrap.appendChild(box);
     });
@@ -176,14 +289,14 @@
         choices: q.choices.map(c => ({
           id: c.id,
           text: c.text,
-          points: parseInt(c.points||0),
+          points: parseInt(c.points || 0),
           explain: c.explain || "",
           effects: {
-            credit_score: parseInt(c.effects.credit_score||0),
-            cash_balance: parseFloat(c.effects.cash_balance||0),
-            salary_monthly: parseFloat(c.effects.salary_monthly||0),
-            energy: parseInt(c.effects.energy||0),
-            xp: parseInt(c.effects.xp||0)
+            credit_score: parseInt(c.effects.credit_score || 0),
+            cash_balance: parseFloat(c.effects.cash_balance || 0),
+            salary_monthly: parseFloat(c.effects.salary_monthly || 0),
+            energy: parseInt(c.effects.energy || 0),
+            xp: parseInt(c.effects.xp || 0)
           }
         }))
       }))
@@ -192,31 +305,33 @@
     document.getElementById("content_json").value = JSON.stringify(payload);
   }
 
-  // events
+  // Events
   document.getElementById("addQuestionBtn").addEventListener("click", addQuestion);
   document.getElementById("buildBtn").addEventListener("click", buildJson);
+
   document.getElementById("questionsWrap").addEventListener("input", (e)=>{
     const path = e.target.dataset.path;
-    if(!path) return;
+    if (!path) return;
     updateField(path.split("|"), e.target.value);
   });
+
   document.getElementById("questionsWrap").addEventListener("click", (e)=>{
     const act = e.target.dataset.act;
-    if(!act) return;
-    if(act==="remove_q") removeQuestion(e.target.dataset.q);
-    if(act==="add_c") addChoice(e.target.dataset.q);
-    if(act==="remove_c") removeChoice(e.target.dataset.q, parseInt(e.target.dataset.i));
+    if (!act) return;
+    if (act === "remove_q") removeQuestion(e.target.dataset.q);
+    if (act === "add_c") addChoice(e.target.dataset.q);
+    if (act === "remove_c") removeChoice(e.target.dataset.q, parseInt(e.target.dataset.i));
   });
 
   document.getElementById("saveBtn").addEventListener("click", (e)=>{
-    buildJson(); // ensure hidden textarea is filled
-    // let the form submit normally
+    buildJson(); // ensure hidden textarea is filled before submit
+    // let form submit normally
   });
 
-  // seed with one example question
+  // Seed with one question + one option so profe ve el patrón
   addQuestion();
-  // and one default choice so el profe sabe por dónde empezar
-  setTimeout(()=>{ addChoice(questions[0].id); }, 0);
+  setTimeout(()=>{ if (questions[0]) addChoice(questions[0].id); }, 0);
 })();
 </script>
+
 {% endblock %}

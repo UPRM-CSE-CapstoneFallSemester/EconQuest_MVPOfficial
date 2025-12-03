@@ -142,14 +142,6 @@
            data-title="Billetera" href="{{ url_for('student_ui.wallet') }}">
           <span class="icon">💰</span><span class="stu-label">Billetera</span>
         </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.badges' else '' }}"
-           data-title="Insignias" href="{{ url_for('student_ui.badges') }}">
-          <span class="icon">🏅</span><span class="stu-label">Insignias</span>
-        </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.progress' else '' }}"
-           data-title="Progreso" href="{{ url_for('student_ui.progress') }}">
-          <span class="icon">📈</span><span class="stu-label">Progreso</span>
-        </a>
         <a class="stu-item {{ 'active' if request.endpoint=='student_ui.help_page' else '' }}"
            data-title="Ayuda" href="{{ url_for('student_ui.help_page') }}">
           <span class="icon">❓</span><span class="stu-label">Ayuda</span>
