@@ -1,112 +1,172 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends 'base.html' %} {% block content %}
 <style>
-  :root{
-    --stu-sbw: 260px;     /* ancho sidebar expandido */
-    --stu-sbw-mini: 88px; /* ancho sidebar colapsado */
-    --stu-topbar: 56px;   /* alto aprox. del navbar superior */
+  :root {
+    --stu-sbw: 260px; /* ancho sidebar expandido */
+    --stu-sbw-mini: 80px; /* ancho sidebar colapsado */
+    --stu-topbar: 56px; /* alto del navbar superior */
   }
 
-  /* ==== IMPORTANTE: quitar la barra blanca entre navbar y dashboard ==== */
-  /* base.html seguramente le pone padding a <main>, aquí lo anulamos
-     SOLO en las vistas del student porque este CSS vive en este layout. */
-  main{
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
-    margin-top: 0 !important;
-    max-width: 100% !important;
-  }
-
-  /* === CONTENEDOR FULL-BLEED === */
-  #stu-root{
+  /* === CONTENEDOR FULL-BLEED (llena todo el viewport aunque el padre tenga max-width) === */
+  #stu-root {
     position: relative;
     left: calc(50% - 50vw);
     width: 100vw;
     min-height: calc(100vh - var(--stu-topbar));
-    display:flex;
-    gap:0;
-    background: rgb(16,185,129,.55);
+    display: flex;
+    gap: 0;
+    background: rgb(16, 185, 129, 0.55);
   }
 
   /* === SIDEBAR === */
-  #stu-sidebar{
+  #stu-sidebar {
     width: var(--stu-sbw);
-    background: linear-gradient(180deg,#0b1222,#0a1426 55%,#0b1728);
-    border-right: 1px solid rgba(148,163,184,.12);
-    position: sticky;
-    top: var(--stu-topbar); /* alineado con el bottom del navbar */
+    background: linear-gradient(180deg, #0b1222, #0a1426 55%, #0b1728);
+    border-right: 1px solid rgba(148, 163, 184, 0.12);
+    position: fixed;
+    top: 10;
     height: calc(100vh - var(--stu-topbar));
     z-index: 10;
   }
 
-  .stu-brand{ color:#e2e8f0; font-weight:600; }
-  .stu-item{
-    display:flex; align-items:center; gap:.75rem;
-    padding:.6rem .75rem; border-radius:.75rem;
-    color:#cbd5e1; text-decoration:none; transition:.15s; position:relative;
+  .stu-brand {
+    color: #e2e8f0;
+    font-weight: 600;
+    opacity: 0; 
+    width: 0; 
+    margin: 0; 
+    overflow: hidden;
+    /* Opacidad y ancho se sincronizan con la velocidad. */
+    transition: opacity 0.6s ease 0.1s, width 0.6s ease 0.1s;
   }
-  .stu-item .icon{
-    width:36px; height:36px; border-radius:.75rem;
-    display:grid; place-items:center; background: rgba(255,255,255,.06);
+  .stu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.3rem 0.75rem; /* Ensure consistent base padding */
+    border-radius: 0.75rem;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out; 
+    position: relative;
+}
+  .stu-item .icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 0.75rem;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.06);  
   }
-  .stu-item:hover{ background: rgba(255,255,255,.06); }
-  .stu-item.active{ background: rgba(16,185,129,.12); color:#34d399; }
+  .stu-item:hover .icon,
+  .stu-item:focus .icon,
+  .stu-item.active .icon {
+    border: #34d399 1px solid;     
+  }
+  .stu-item.active {
+    color: #34d399;
+  }
+  .stu-item:hover,
+  .stu-item:focus,
+  .stu-item.active:hover,
+  .stu-item.active:focus { 
+    transform: scale(1.20); /* 20% increase in size */
+    color: #34d399;
 
-  /* Colapsado */
-  #stu-root.collapsed #stu-sidebar{ width: var(--stu-sbw-mini); }
-  #stu-root.collapsed .stu-label,
-  #stu-root.collapsed .stu-brand{
-    opacity:0; width:0; margin:0; overflow:hidden;
   }
-  #stu-root.collapsed .stu-item:hover::after{
+  /* Colapsado */
+  #stu-root.collapsed #stu-sidebar {
+    width: var(--stu-sbw-mini);
+  }
+  #stu-root.collapsed .stu-label,
+  #stu-root.collapsed .stu-brand {
+    opacity: 0;
+    width: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+  #stu-root.collapsed .stu-item:hover::after {
     content: attr(data-title);
-    position:absolute; left: calc(100% + 8px); top:50%;
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
     transform: translateY(-50%);
-    background:#0f172a; color:#e2e8f0;
-    border:1px solid rgba(148,163,184,.2);
-    padding:.35rem .55rem; border-radius:.5rem;
-    white-space:nowrap; box-shadow: 0 10px 24px rgba(0,0,0,.35);
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  /* === Hover-to-expand behavior === */
+  #stu-root.collapsed #stu-sidebar:hover {
+    width: var(--stu-sbw);
+  }
+  #stu-root.collapsed #stu-sidebar:hover .stu-label,
+  #stu-root.collapsed #stu-sidebar:hover .stu-brand {
+    opacity: 1;
+    width: auto;
+    margin-left: 0.25rem;
+    overflow: visible;
+    transition: opacity 0.8s ease-in-out;
+  }
+  #stu-root.collapsed #stu-sidebar:hover .stu-item:hover::after {
+    display: none;
   }
 
   /* Botón “oreja” para colapsar/expandir */
-  .stu-handle{
-    position: absolute; top: 12px; right: 0;
+  .stu-handle {
+    position: absolute;
+    top: -15px;
+    right: 0;
     transform: translateX(50%);
-    width: 28px; height: 28px; border-radius: 9999px;
-    background:#10b981; color:#082c22; font-weight:900;
-    display:grid; place-items:center; box-shadow:0 6px 14px rgba(0,0,0,.35);
-    cursor:pointer;
+    width: 35px;
+    height: 35px;
+    border-radius: 9999px;
+    background: #10b981;
+    color: #082c22;
+    font-weight: 900;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    cursor: pointer;
   }
-  #stu-root.collapsed .stu-handle #stu-icon{
+  #stu-root.collapsed .stu-handle #stu-icon {
     transform: rotate(180deg);
   }
 
   /* === MAIN === */
-  #stu-main{
-    flex:1;
+  #stu-main {
+    flex: 1;
     padding: 20px 28px 40px;
     color: #e6f7f1;
   }
-
-  /* Tarjetas del dashboard */
-  .card-emerald{
-    background: rgba(12, 60, 48, .55);
-    border: 1px solid rgba(16,185,129,.18);
-    border-radius: 18px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.35) inset,
-                0 12px 28px rgba(0,0,0,.25);
+  
+  #stu-root.collapsed #stu-sidebar:hover ~ #stu-main {
+    margin-left: var(--stu-sbw);
+    transition: margin-left 0.25s ease-in-out;
   }
 
-  /* Stats dock fijo (derecha) */
-  .stats-dock{
+  /* Tarjetas del dashboard */
+  .card-emerald {
+    background: rgba(12, 60, 48, 0.55);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) inset,
+      0 12px 28px rgba(0, 0, 0, 0.25);
+  }
+
+  /* DOCK DE STATS FIJO (derecha) */
+  .stats-dock {
     position: fixed;
     right: 20px;
     top: calc(var(--stu-topbar) + 20px);
     width: 300px;
     z-index: 15;
   }
-  @media (max-width: 1024px){
-    .stats-dock{
+  @media (max-width: 1024px) {
+    .stats-dock {
       position: static;
       width: 100%;
       margin-top: 1rem;
@@ -121,37 +181,58 @@
       <span id="stu-icon">«</span>
     </button>
 
-    <div class="p-4">
+    <div class="p-1">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-emerald-500 text-white grid place-items-center font-extrabold">
-          EQ
-        </div>
-        <div class="stu-brand">EconQuest</div>
+        <div
+        >
       </div>
 
       <nav class="mt-6 space-y-2">
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.dashboard' else '' }}"
-           data-title="Dashboard" href="{{ url_for('student_ui.dashboard') }}">
+        <a
+          class="stu-item {{ 'active' if request.endpoint=='student_ui.dashboard' else '' }}"
+          data-title="Dashboard"
+          href="{{ url_for('student_ui.dashboard') }}"
+        >
           <span class="icon">🏠</span><span class="stu-label">Dashboard</span>
         </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.missions' else '' }}"
-           data-title="Misiones" href="{{ url_for('student_ui.missions') }}">
+
+        <a
+          class="stu-item {{ 'active' if request.endpoint=='student_ui.missions' else '' }}"
+          data-title="Misiones"
+          href="{{ url_for('student_ui.missions') }}"
+        >
           <span class="icon">🎯</span><span class="stu-label">Misiones</span>
         </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.wallet' else '' }}"
-           data-title="Billetera" href="{{ url_for('student_ui.wallet') }}">
-          <span class="icon">💰</span><span class="stu-label">Billetera</span>
+
+        <a
+          class="stu-item {{ 'active' if request.endpoint=='student_ui.wallet' else '' }}"
+          data-title="Wallet"
+          href="{{ url_for('student_ui.wallet') }}"
+        >
+          <span class="icon">💰</span><span class="stu-label">Wallet</span>
         </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.badges' else '' }}"
-           data-title="Insignias" href="{{ url_for('student_ui.badges') }}">
+
+        <a
+          class="stu-item {{ 'active' if request.endpoint=='student_ui.badges' else '' }}"
+          data-title="Insignias"
+          href="{{ url_for('student_ui.badges') }}"
+        >
           <span class="icon">🏅</span><span class="stu-label">Insignias</span>
         </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.progress' else '' }}"
-           data-title="Progreso" href="{{ url_for('student_ui.progress') }}">
+
+        <a
+          class="stu-item {{ 'active' if request.endpoint=='student_ui.progress' else '' }}"
+          data-title="Progreso"
+          href="{{ url_for('student_ui.progress') }}"
+        >
           <span class="icon">📈</span><span class="stu-label">Progreso</span>
         </a>
-        <a class="stu-item {{ 'active' if request.endpoint=='student_ui.help_page' else '' }}"
-           data-title="Ayuda" href="{{ url_for('student_ui.help_page') }}">
+
+        <a
+          class="stu-item {{ 'active' if request.endpoint=='student_ui.help_page' else '' }}"
+          data-title="Ayuda"
+          href="{{ url_for('student_ui.help_page') }}"
+        >
           <span class="icon">❓</span><span class="stu-label">Ayuda</span>
         </a>
       </nav>
@@ -159,44 +240,42 @@
   </aside>
 
   <!-- Main -->
-  <section id="stu-main">
-    {% block student_content %}{% endblock %}
-  </section>
+  <section id="stu-main">{% block student_content %}{% endblock %}</section>
 
-  <!-- Stats dock -->
+  <!-- Stats (fijo a la derecha) -->
   <div class="stats-dock">
-    {% set _p = (profile if profile is defined and profile else
-                 (current_user.profile if current_user.is_authenticated else None)) %}
-    {% if _p %}
-      {% with profile=_p %}
-        {% include 'student/_stats_dock.html' %}
-      {% endwith %}
-    {% endif %}
+    {# intenta usar el profile pasado; si no, usa current_user.profile #} {% set
+    _p = (profile if profile is defined and profile else (current_user.profile
+    if current_user.is_authenticated else None)) %} {% if _p %} {% with
+    profile=_p %} {% include 'student/_stats_dock.html' %} {% endwith %} {%
+    endif %}
   </div>
 </div>
 
 <script>
-  (function(){
-    if(localStorage.getItem('theme')==='dark'){
-      document.documentElement.classList.add('dark');
+  // Mantener tema dark si ya existe
+  (function () {
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.classList.add("dark");
     }
   })();
 
-  const stuRoot   = document.getElementById('stu-root');
-  const stuHandle = document.getElementById('stu-handle');
+  // Colapsar / Expandir sidebar (persistente)
+  const stuRoot = document.getElementById("stu-root");
+  const stuHandle = document.getElementById("stu-handle");
+  const stuIcon = document.getElementById("stu-icon");
 
-  function setCollapsed(v){
-    if(v){ stuRoot.classList.add('collapsed'); }
-    else { stuRoot.classList.remove('collapsed'); }
-    localStorage.setItem('stu-collapsed', v ? '1' : '0');
+  function setCollapsed(v) {
+    if (v) {
+      stuRoot.classList.add("collapsed");
+    } else {
+      stuRoot.classList.remove("collapsed");
+    }
+    localStorage.setItem("stu-collapsed", v ? "1" : "0");
   }
-
-  stuHandle.addEventListener('click', () =>
-    setCollapsed(!stuRoot.classList.contains('collapsed'))
+  stuHandle.addEventListener("click", () =>
+    setCollapsed(!stuRoot.classList.contains("collapsed"))
   );
-
-  if(localStorage.getItem('stu-collapsed')==='1'){
-    setCollapsed(true);
-  }
+  if (localStorage.getItem("stu-collapsed") === "1") setCollapsed(true);
 </script>
 {% endblock %}

@@ -1,234 +1,227 @@
-{# ====== STATS DOCK DERECHA, COLAPSABLE COMPLETO ====== #}
+{# Dock de stats colapsable (independiente del sidebar) #}
 <style>
-  :root{
-    --stats-width: 320px;   /* ancho del panel */
-    --stats-handle: 38px;   /* tamaño del botón redondo */
-    --stats-top: 96px;      /* separación desde el navbar */
+  :root {
+    --stats-width: 320px; /* ancho panel desktop */
+    --stats-handle: 34px; /* ancho/alto de la manija */
+    --stats-top: 88px; /* separación desde el top (debajo del navbar) */
   }
 
-  /* Panel fijo al lado DERECHO */
-  #statsDock{
+  /* Contenedor fijo a la derecha */
+  #statsDock {
     position: fixed;
+    right: 18px;
     top: var(--stats-top);
-    right: 16px;
     width: var(--stats-width);
-    z-index: 40;
-    transition: right .25s ease, opacity .25s ease;
+    z-index: 50;
+    transform: translateX(0);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  /* Dejar sólo la manija visible cuando está colapsado */
+  #statsDock.collapsed {
+    transform: translateX(calc(100% - var(--stats-handle)));
+    opacity: 0.95;
   }
 
-  /* Cuando está colapsado: se va COMPLETO fuera de la pantalla */
-  #statsDock.collapsed{
-    right: calc(-1 * var(--stats-width) - 32px);
-    opacity: .95;
-  }
-
-  #statsDock .stats-card{
+  /* Tarjeta */
+  #statsDock .stats-card {
     background: #0b1324;
     color: #e6f7f1;
-    border: 1px solid rgba(148,163,184,.18);
+    border: 1px solid rgba(148, 163, 184, 0.18);
     border-radius: 18px;
-    box-shadow: 0 12px 32px rgba(0,0,0,.4);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
     padding: 16px 16px 14px;
-    margin-top: 55px;
+  }
+  #statsDock .stats-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  #statsDock .stats-title {
+    font-weight: 700;
+  }
+  #statsDock .stats-badge {
+    font-size: 12px;
+    opacity: 0.6;
   }
 
-  #statsDock .stats-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:8px;
+  #statsDock ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
-  #statsDock .stats-title{
-    font-weight:700;
-    font-size:14px;
+  #statsDock li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 10px;
   }
-  #statsDock .stats-badge{
-    font-size:11px;
-    opacity:.8;
-    background: rgba(16,185,129,.16);
-    border-radius:999px;
-    padding:2px 8px;
+  #statsDock li:hover {
+    background: rgba(16, 185, 129, 0.08);
   }
-
-  #statsDock ul{
-    list-style:none;
-    padding:0;
-    margin:4px 0 0 0;
+  #statsDock .k {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #cdebe3;
   }
-  #statsDock li{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:7px 9px;
-    border-radius:10px;
-    font-size:13px;
-  }
-  #statsDock li:hover{
-    background: rgba(16,185,129,.08);
-  }
-  #statsDock .k{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:#cdebe3;
-    font-weight:500;
-  }
-  #statsDock .k span.label{ font-size:13px; }
-  #statsDock .v{
-    font-weight:700;
-    color:#9ff3cf;
-    font-variant-numeric: tabular-nums;
+  #statsDock .v {
+    font-weight: 700;
+    color: #9ff3cf;
   }
 
-  #statsDock .hint{
-    font-size:11px;
-    color:#b6d7cf;
-    opacity:.85;
-    margin-top:7px;
-    background: rgba(16,185,129,.06);
-    border:1px solid rgba(16,185,129,.18);
-    padding:6px 8px;
-    border-radius:10px;
+  #statsDock .hint {
+    font-size: 12px;
+    color: #b6d7cf;
+    opacity: 0.75;
+    margin-top: 8px;
+    background: rgba(16, 185, 129, 0.06);
+    border: 1px solid rgba(16, 185, 129, 0.18);
+    padding: 6px 8px;
+    border-radius: 10px;
   }
 
-  /* Botón flotante SIEMPRE en el borde derecho */
-  #statsHandle{
-    position: fixed;
-    top: calc(var(--stats-top) + 8px);
-    right: 12px;
+  /* Manija (botón flotante pegado al borde del panel) */
+  #statsHandle {
+    position: absolute;
+    left: calc(-1 * (var(--stats-handle) / 2));
+    top: 14px;
     width: var(--stats-handle);
     height: var(--stats-handle);
     border-radius: 9999px;
     background: #10b981;
-    color:#06281f;
+    color: #06281f;
     font-weight: 900;
-    display:grid;
-    place-items:center;
-    box-shadow: 0 10px 22px rgba(16,185,129,.35);
-    border: 1px solid rgba(6,24,20,.45);
-    cursor:pointer;
-    transition: transform .2s ease, filter .2s ease;
-    z-index: 41; /* encima del panel */
+    display: grid;
+    place-items: center;
+    box-shadow: 0 10px 22px rgba(16, 185, 129, 0.35);
+    border: 1px solid rgba(6, 24, 20, 0.45);
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
   }
-  #statsHandle:hover{
+  #statsHandle:hover {
     transform: translateY(-1px);
-    filter:brightness(1.05);
+    filter: brightness(1.05);
   }
 
-  /* — En móvil: lo volvemos barra inferior que se esconde hacia abajo — */
-  @media (max-width: 1024px){
-    #statsDock{
+  /* — Responsive: lo convertimos en barra inferior — */
+  @media (max-width: 1024px) {
+    #statsDock {
       left: 12px;
       right: 12px;
       width: auto;
       top: auto;
       bottom: 12px;
-      transition: transform .25s ease, opacity .25s ease;
-      right: 12px; /* por si acaso */
+      transform: translateY(0);
     }
-    #statsDock.collapsed{
-      transform: translateY(calc(100% + 20px));
+    #statsDock.collapsed {
+      transform: translateY(calc(100% - var(--stats-handle)));
     }
-    #statsHandle{
-      top: auto;
-      bottom: 16px;
-      right: 16px;
+    #statsHandle {
+      left: 50%;
+      top: -18px;
+      transform: translateX(-50%);
+    }
+    #statsHandle:hover {
+      transform: translateX(-50%) translateY(-1px);
     }
   }
 </style>
 
-<!-- Botón flotante (siempre visible) -->
-<button id="statsHandle"
-        aria-controls="statsDock"
-        aria-expanded="true"
-        title="Mostrar/ocultar stats">
-  »
-</button>
-
-<!-- Panel de stats -->
 <aside id="statsDock" aria-label="Mis stats">
+  <button
+    id="statsHandle"
+    class="shadow"
+    aria-controls="statsDock"
+    aria-expanded="true"
+    title="Mostrar/ocultar stats"
+  >
+    »
+  </button>
+
   <div class="stats-card">
     <div class="stats-head">
       <div class="stats-title">Mis stats</div>
-      <div class="stats-badge">
-        Nivel {{ profile.level or 1 }}
-      </div>
     </div>
 
     <ul>
       <li>
-        <div class="k">⭐ <span class="label">Nivel</span></div>
-        <div class="v">{{ profile.level or 1 }}</div>
+        <div class="k">🪪 <span>Crédito</span></div>
+        <div class="v">{{ profile.credit_score }}</div>
       </li>
       <li>
-        <div class="k">⚡ <span class="label">XP</span></div>
-        <div class="v">{{ profile.xp or 0 }}</div>
+        <div class="k">💵 <span>Efectivo</span></div>
+        <div class="v">$ {{ profile.cash_balance }}</div>
       </li>
       <li>
-        <div class="k">🪪 <span class="label">Crédito</span></div>
-        <div class="v">{{ profile.credit_score or 650 }}</div>
+        <div class="k">💼 <span>Salario</span></div>
+        <div class="v">$ {{ profile.salary_monthly }} / mes</div>
       </li>
       <li>
-        <div class="k">💵 <span class="label">Efectivo</span></div>
-        <div class="v">$ {{ (profile.cash_balance or 0)|round(0) }}</div>
+        <div class="k">📈 <span>Ingreso diario</span></div>
+        <div class="v">$ {{ (profile.salary_monthly/30)|round(0) }}</div>
       </li>
       <li>
-        <div class="k">💼 <span class="label">Salario</span></div>
-        <div class="v">$ {{ (profile.salary_monthly or 0)|round(0) }} / mes</div>
+        <div class="k">🚗 <span>Carro</span></div>
+        <div class="v">Si : $ {{ profile.car_payment_monthly }}/mes</div>
       </li>
       <li>
-        <div class="k">🔋 <span class="label">Energía</span></div>
-        <div class="v">{{ profile.energy or 0 }}</div>
+        <div class="k">⭐ <span>Nivel</span></div>
+        <div class="v">{{ profile.level }}</div>
+      </li>
+      <li>
+        <div class="k">🔋 <span>Energía</span></div>
+        <div class="v">{{ profile.energy }}</div>
       </li>
     </ul>
 
     <div class="hint">
-      Gana XP y 💵 con misiones, cuida tu energía y mejora tu score. 🎯
+      Gana $ con misiones, controla gastos y aumenta tu score. 🎯
     </div>
   </div>
 </aside>
 
 <script>
-(function(){
-  const dock   = document.getElementById('statsDock');
-  const handle = document.getElementById('statsHandle');
+  (function () {
+    const dock = document.getElementById("statsDock");
+    const handle = document.getElementById("statsHandle");
 
-  const setCollapsed = (v) => {
-    dock.classList.toggle('collapsed', v);
-    handle.setAttribute('aria-expanded', String(!v));
+    const setCollapsed = (v) => {
+      dock.classList.toggle("collapsed", v);
+      handle.setAttribute("aria-expanded", String(!v));
+      // flecha: si está colapsado, apunta hacia la app (abrir)
+      const isMobile = window.matchMedia("(max-width:1024px)").matches;
+      handle.textContent = v ? (isMobile ? "▲" : "«") : isMobile ? "▼" : "»";
+      try {
+        localStorage.setItem("stats-collapsed", v ? "1" : "0");
+      } catch (_) {}
+    };
 
-    const isMobile = window.matchMedia('(max-width:1024px)').matches;
-    // Derecha:
-    //  - colapsado => » (entra desde la derecha / abajo)
-    //  - abierto   => « (se esconde hacia la derecha / abajo)
-    handle.textContent = v
-      ? (isMobile ? '▲' : '«')
-      : (isMobile ? '▼' : '»');
+    // estado persistido
+    let initial = false;
+    try {
+      initial = localStorage.getItem("stats-collapsed") === "1";
+    } catch (_) {}
+    setCollapsed(initial);
 
-    try{ localStorage.setItem('stats-collapsed', v ? '1' : '0'); }catch(_){}
-  };
+    handle.addEventListener("click", () =>
+      setCollapsed(!dock.classList.contains("collapsed"))
+    );
 
-  let initial = false;
-  try{ initial = localStorage.getItem('stats-collapsed') === '1'; }catch(_){}
-  setCollapsed(initial);
+    // Acceso rápido opcional: Ctrl/Cmd + S para mostrar/ocultar (no bloquea “Guardar” en formularios)
+    window.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setCollapsed(!dock.classList.contains("collapsed"));
+      }
+    });
 
-  handle.addEventListener('click', () => {
-    setCollapsed(!dock.classList.contains('collapsed'));
-  });
-
-  // Opcional: Ctrl/Cmd + S para togglear
-  window.addEventListener('keydown', (e)=>{
-    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){
-      e.preventDefault();
-      setCollapsed(!dock.classList.contains('collapsed'));
-    }
-  });
-
-  // Reajusta iconito cuando cambie ancho (desktop <-> móvil)
-  window.addEventListener('resize', () => {
-    const v = dock.classList.contains('collapsed');
-    setCollapsed(v);
-  });
-})();
+    // Ajusta el ícono al cambiar de tamaño (desktop <-> mobile)
+    window.addEventListener("resize", () => {
+      const v = dock.classList.contains("collapsed");
+      setCollapsed(v);
+    });
+  })();
 </script>
