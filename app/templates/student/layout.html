@@ -99,7 +99,7 @@
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
   }
 
-  /* === Hover-to-expand behavior === */
+  /* === Hover-to-expand === */
   #stu-root.collapsed #stu-sidebar:hover {
     width: var(--stu-sbw);
   }
@@ -109,7 +109,7 @@
     width: auto;
     margin-left: 0.25rem;
     overflow: visible;
-    transition: opacity 0.8s ease-in-out;
+    transition: opacity 1.1s ease-in-out;
   }
   #stu-root.collapsed #stu-sidebar:hover .stu-item:hover::after {
     display: none;
@@ -141,11 +141,11 @@
     flex: 1;
     padding: 20px 28px 40px;
     color: #e6f7f1;
+    transition: margin-left 0.5s ease-in-out;
   }
   
   #stu-root.collapsed #stu-sidebar:hover ~ #stu-main {
     margin-left: var(--stu-sbw);
-    transition: margin-left 0.25s ease-in-out;
   }
 
   /* Tarjetas del dashboard */
