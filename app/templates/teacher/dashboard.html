@@ -284,7 +284,7 @@
               <div class="font-semibold text-emerald-100">{{ m.title }}</div>
               <div class="text-xs text-emerald-200/80 mt-1">{{ m.description or '' }}</div>
               <div class="mt-2 text-xs text-emerald-200/80">
-                🎯
+
                 {% if m.condition_type == 'reach_level' %}
                   Llegar al nivel {{ m.condition_value }}
                 {% elif m.condition_type == 'complete_any_module' %}

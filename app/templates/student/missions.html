@@ -107,7 +107,7 @@
                 <span class="mission-pill">💵 ${{ '%.2f'|format(mission.cash_reward) }}</span>
               {% endif %}
               <span class="mission-pill">
-                🎯
+
                 {% if mission.condition_type == 'reach_level' %}
                   Llega al nivel {{ mission.condition_value }}
                 {% elif mission.condition_type == 'complete_module' %}
@@ -147,7 +147,7 @@
       </div>
     {% else %}
       <div class="empty-state">
-        🎯 Aún no hay misiones configuradas por tu profesor.
+         Aún no hay misiones configuradas por tu profesor.
       </div>
     {% endif %}
   </section>

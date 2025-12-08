@@ -156,7 +156,7 @@ class Modules(db.Model):
     content_json = db.Column(db.Text, nullable=True)
 
 
-    # 👇 one-to-many: a module has many activities
+    # one-to-many: a module has many activities
     activities = db.relationship(
         "Activities",
         back_populates="module",
@@ -187,7 +187,7 @@ class Activities(db.Model):
     attempt_limit = db.Column(db.Integer)   # nullable OK (will fallback to global default)
     default_xp    = db.Column(db.Integer)   # nullable OK
 
-    # 👇 the other side of the relation; MUST exist to match back_populates above
+    # the other side of the relation; MUST exist to match back_populates above
     module = db.relationship("Modules", back_populates="activities")
     xp_on_finish = db.Column(db.Integer, nullable=True, default=0)
 
@@ -202,7 +202,7 @@ class GameSettings(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-# --- Asociaciones para grupos (clases)
+# Asociaciones para grupos (clases)
 group_students = db.Table(
     "group_students",
     db.Column("group_id", db.Integer, db.ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
@@ -235,10 +235,8 @@ Users.profile = db.relationship(
     cascade="all, delete-orphan"
 )
 
-# app/models.py
 from datetime import datetime
 from app import db
-# from sqlalchemy.orm import backref  # not needed if you use backref="group" as a string
 
 class Groups(db.Model):
     __tablename__ = "groups"
@@ -259,10 +257,10 @@ class Groups(db.Model):
         nullable=False
     )
 
-    # --- relaciones útiles para el dashboard ---
+    # relaciones útiles para el dashboard
     members = db.relationship(
         "GroupMembers",
-        backref="group",              # use a plain string; no need to import backref()
+        backref="group",
         cascade="all, delete-orphan",
         lazy="joined",
     )
@@ -279,7 +277,6 @@ class Groups(db.Model):
         """Devuelve una lista de Users (estudiantes) en el grupo."""
         return [m.user for m in self.members]
 
-    # Backwards-compatibility: allow templates/code that still read .grade
     @property
     def grade(self):
         return self.grade_level
@@ -294,7 +291,7 @@ class GroupMembers(db.Model):
     # relación al usuario (estudiante)
     user = db.relationship("Users", backref=backref("group_memberships", lazy="select"))
 
-# Si tienes ModuleAssignments, opcionalmente añade backrefs si faltan:
+
 class ModuleAssignments(db.Model):
     __tablename__ = "module_assignments"
     id = db.Column(db.Integer, primary_key=True)
@@ -313,8 +310,8 @@ class Missions(db.Model):
     description = db.Column(db.Text)
 
     # cómo se completa
-    condition_type = db.Column(db.String(50), nullable=False)  # 'reach_level', 'complete_module', 'complete_any_module'
-    condition_value = db.Column(db.Integer)  # nivel o module_id, depende del tipo
+    condition_type = db.Column(db.String(50), nullable=False)
+    condition_value = db.Column(db.Integer)
 
     # recompensa
     xp_reward = db.Column(db.Integer, default=0)
@@ -333,8 +330,8 @@ class MissionProgress(db.Model):
     mission_id = db.Column(db.Integer, db.ForeignKey("missions.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
-    is_completed = db.Column(db.Boolean, default=False)  # requisito cumplido
-    is_collected = db.Column(db.Boolean, default=False)  # recompensa cobrada
+    is_completed = db.Column(db.Boolean, default=False)
+    is_collected = db.Column(db.Boolean, default=False)
 
     completed_at = db.Column(db.DateTime)
     collected_at = db.Column(db.DateTime)

@@ -45,7 +45,7 @@ def run_seed():
             is_published=True
         )
         db.session.add(m)
-        db.session.flush()  # asegura m.id
+        db.session.flush()
 
         a1 = Activities(
             module_id=m.id,

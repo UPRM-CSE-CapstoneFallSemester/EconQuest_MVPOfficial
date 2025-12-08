@@ -201,15 +201,15 @@
     <div class="flex flex-col items-start md:items-end gap-2 text-xs">
       <div class="flex flex-wrap gap-2">
         <span class="pill pill-soft">
-          ⭐ Tu nivel: {{ my_level }}
+          Tu nivel: {{ my_level }}
         </span>
         {% if module_has_level %}
           <span class="pill {{ 'pill-danger' if locked else 'pill-soft' }}">
-            🎯 Nivel requerido módulo: {{ required_level }}
+            Nivel requerido módulo: {{ required_level }}
           </span>
         {% endif %}
         <span class="pill">
-          🧩 Actividades: {{ activities|length }}
+          Actividades: {{ activities|length }}
         </span>
         <span class="pill">
           XP sugerido módulo: {{ module.xp_reward or 0 }}
@@ -218,7 +218,7 @@
       {% if locked %}
         <div class="lock-banner mt-1">
           Este módulo está bloqueado hasta que alcances el nivel {{ required_level }}.
-          Completa otras actividades para ganar XP y subir de nivel. 💪
+          Completa otras actividades para ganar XP y subir de nivel.
         </div>
       {% endif %}
     </div>
