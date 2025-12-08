@@ -1,291 +1,456 @@
-{% extends 'student/layout.html' %} {% block student_content %}
+{% extends 'student/layout.html' %}
+{% block student_content %}
 <style>
-  /* === CONTENT WRAPPER FIX (Permanently Collapsed Sidebar) === */
-  #stu-main-content-wrapper {
-    /* Updated margin-left to match the permanent narrow sidebar width (e.g., 80px) */
-    margin-left: 80px;
-    padding: 1.5rem;
-    padding-top: 1rem;
+  :root{
+    --eq-header-h: 64px;
+    --eq-left-gutter: 3rem;
   }
 
-  /* ===== BASE (Existing Styles) ===== */
-  .stu-dashboard {
-    color: #e6f7f1;
-    animation: fadeIn 0.5s ease-in-out;
+  /* Layout general */
+  .stu-dashboard{
+    color:#e6f7f1;
+    padding-top: calc(var(--eq-header-h) + 10px);
   }
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  @media (min-width: 768px){
+    .guard-left{ padding-left: var(--eq-left-gutter); }
   }
 
-  .stu-title {
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .stu-title::before {
-    content: "★";
-    color: #10b981;
-    opacity: 0.8;
-    font-size: 1rem;
+  .stu-title{
+    font-weight:700;
+    letter-spacing:.2px;
+    margin-top:.5rem;
   }
 
-  /* ===== WELCOME SECTION ===== */
-  .welcome-banner {
-    background: linear-gradient(
-      90deg,
-      rgba(16, 185, 129, 0.18),
-      rgba(6, 60, 45, 0.5)
-    );
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    border-radius: 18px;
-    padding: 22px 24px;
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35),
-      inset 0 0 20px rgba(16, 185, 129, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 2rem;
-    animation: slideIn 0.6s ease-in-out;
+  /* ===== HUD / PLAYER CARD ===== */
+  .hud-grid{
+    display:grid;
+    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.3fr) minmax(0, 1.3fr);
+    gap:16px;
   }
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+  @media (max-width:1024px){
+    .hud-grid{
+      grid-template-columns: minmax(0,1fr);
     }
   }
 
-  .welcome-name {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #d0fff1;
+  .card-base{
+    border-radius:18px;
+    padding:14px 16px;
+    background: radial-gradient(circle at top left, rgba(16,185,129,.28), transparent 55%),
+                linear-gradient(145deg, rgba(6,32,27,.98), rgba(4,20,17,.98));
+    border:1px solid rgba(16,185,129,.35);
+    box-shadow:0 14px 34px rgba(0,0,0,.55), inset 0 0 40px rgba(16,185,129,.06);
   }
-  .welcome-sub {
-    font-size: 0.95rem;
-    color: #a7c6be;
-    opacity: 0.9;
+
+  .player-card{
+    display:flex;
+    gap:14px;
+    align-items:stretch;
   }
-  .xp-bar {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 9999px;
-    overflow: hidden;
-    margin-top: 8px;
+  .player-avatar{
+    flex-shrink:0;
+    width:56px;
+    height:56px;
+    border-radius:999px;
+    background:radial-gradient(circle at 30% 20%, #bbf7d0, #059669);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size:1.5rem;
+    color:#022c22;
+    box-shadow:0 0 0 3px rgba(16,185,129,.35);
   }
-  .xp-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #10b981, #34d399);
-    width: var(--xp-progress, 45%);
-    transition: width 0.4s ease;
+  .player-main{
+    flex:1;
+    min-width:0;
+  }
+  .player-name{
+    font-size:.95rem;
+    font-weight:700;
+    color:#e6fffb;
+  }
+  .player-sub{
+    font-size:.72rem;
+    color:#a7f3d0;
+    opacity:.85;
+  }
+
+  .pill-small{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:3px 8px;
+    border-radius:999px;
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border:1px solid rgba(148,163,184,.6);
+    background:rgba(15,23,42,.9);
+    color:#e5fef7;
+  }
+  .pill-small-success{
+    border-color:rgba(16,185,129,.7);
+    background:rgba(6,78,59,.9);
+    color:#bbf7d0;
+  }
+
+  .xp-bar-wrap{
+    margin-top:8px;
+  }
+  .xp-bar-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:.7rem;
+    color:#a7c6be;
+    margin-bottom:3px;
+  }
+  .xp-bar{
+    position:relative;
+    width:100%;
+    height:8px;
+    border-radius:999px;
+    background:rgba(15,23,42,.9);
+    overflow:hidden;
+  }
+  .xp-bar-fill{
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    background:linear-gradient(90deg,#22c55e,#a3e635,#22c55e);
+    box-shadow:0 0 18px rgba(74,222,128,.7);
+    transform-origin:left center;
+  }
+
+  .hud-stat{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .hud-stat-title{
+    font-size:.8rem;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#a7f3d0;
+  }
+  .hud-stat-main{
+    font-size:1.3rem;
+    font-weight:700;
+    color:#ecfeff;
+  }
+  .hud-stat-sub{
+    font-size:.8rem;
+    color:#bae6fd;
+    opacity:.9;
   }
 
   /* ===== MÓDULOS ===== */
-  .mod-grid {
-    display: grid;
+  .mod-grid{
+    display:grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 18px;
+    gap:16px;
   }
-  .module-card {
-    position: relative;
-    border-radius: 16px;
-    padding: 18px 20px;
-    background: rgba(9, 45, 38, 0.55);
-    border: 1px solid rgba(16, 185, 129, 0.28);
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.12),
-      0 10px 26px rgba(0, 0, 0, 0.35);
-    transition: all 0.2s ease-in-out;
+  .module-card{
+    position:relative;
+    border-radius:18px;
+    padding:16px 18px;
+    margin-top:.75rem;
+    background: radial-gradient(circle at top left, rgba(16,185,129,.18), transparent 55%),
+                linear-gradient(180deg, rgba(11,47,40,.92), rgba(5,25,22,.96));
+    border:1px solid rgba(16,185,129,.28);
+    box-shadow: 0 12px 32px rgba(0,0,0,.38), inset 0 0 40px rgba(16,185,129,.07);
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease, border-color .18s ease;
   }
-  .module-card:hover {
-    transform: translateY(-3px) scale(1.01);
-    filter: brightness(1.05);
-    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.18),
-      0 16px 36px rgba(0, 0, 0, 0.45);
+  .module-card:hover{
+    transform: translateY(-3px);
+    filter: brightness(1.06);
+    box-shadow: 0 18px 40px rgba(0,0,0,.5), inset 0 0 52px rgba(16,185,129,.09);
+    border-color:rgba(45,212,191,.7);
   }
-  .module-title {
-    font-weight: 700;
-    color: #d0fff1;
-    font-size: 1.05rem;
+  .module-title{
+    font-weight:700;
+    color:#d6fff4;
+    display:flex;
+    align-items:center;
+    gap:6px;
   }
-  .module-badge {
-    display: inline-block;
-    margin-top: 6px;
-    font-size: 12px;
-    color: #7ef2c5;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.25);
-    padding: 0.25rem 0.6rem;
-    border-radius: 9999px;
+  .module-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    margin-top:6px;
+    font-size:12px;
+    color:#7ef2c5;
+    background: rgba(16,185,129,.12);
+    border:1px solid rgba(16,185,129,.25);
+    padding:.2rem .55rem;
+    border-radius:9999px;
   }
-  .module-badge.is-draft {
-    color: #e9b86a;
-    background: rgba(234, 179, 8, 0.08);
-    border-color: rgba(234, 179, 8, 0.25);
+  .module-badge.is-draft{
+    color:#facc6b;
+    background: rgba(234,179,8,.08);
+    border-color:rgba(234,179,8,.25);
   }
-  .module-progress {
-    margin-top: 10px;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 9999px;
-    overflow: hidden;
+  .module-footer{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-top:10px;
+    font-size:.75rem;
+    color:#a7c6be;
   }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #10b981, #34d399);
-    width: var(--progress, 60%);
-    transition: width 0.4s ease;
+  .module-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
   }
 
   /* ===== ACTIVIDADES ===== */
-  .act-grid {
-    display: grid;
+  .act-grid{
+    display:grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    gap:18px;
   }
-  @media (max-width: 1024px) {
-    .act-grid {
-      grid-template-columns: 1fr;
-    }
+  @media (max-width:1024px){
+    .act-grid{ grid-template-columns:1fr; }
   }
 
-  .activity-card {
-    position: relative;
-    border-radius: 18px;
-    padding: 18px;
-    background: linear-gradient(
-      180deg,
-      rgba(11, 47, 40, 0.9),
-      rgba(7, 28, 26, 0.9)
-    );
-    border: 1px solid rgba(16, 185, 129, 0.22);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38),
-      inset 0 0 40px rgba(16, 185, 129, 0.05);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  .activity-card{
+    position:relative;
+    border-radius:18px;
+    padding:16px;
+    background: radial-gradient(circle at top right, rgba(52,211,153,.16), transparent 55%),
+                linear-gradient(180deg, rgba(10,37,33,.96), rgba(7,26,23,.98));
+    border:1px solid rgba(16,185,129,.26);
+    box-shadow: 0 12px 32px rgba(0,0,0,.38), inset 0 0 40px rgba(16,185,129,.05);
   }
-  .activity-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  .activity-meta{
+    font-size:12px;
+    color:#a7c6be;
+    opacity:.9;
+    margin-bottom:6px;
   }
-  .activity-meta {
-    font-size: 12px;
-    color: #a7c6be;
-    opacity: 0.9;
-    margin-bottom: 10px;
+  .activity-title{
+    font-size:.98rem;
+    font-weight:600;
+    color:#e0fdf4;
   }
-  .btn-try {
-    display: inline-block;
-    margin-top: 12px;
-    background: #10b981;
-    color: #06281f;
-    font-weight: 700;
-    padding: 0.55rem 1rem;
-    border-radius: 12px;
-    box-shadow: 0 8px 18px rgba(16, 185, 129, 0.25);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-    text-decoration: none;
+
+  .activity-tag-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:6px;
+    font-size:.72rem;
+    color:#a7f3d0;
   }
-  .btn-try:hover {
+
+  .btn-try{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:12px;
+    background:#10b981;
+    color:#06281f;
+    font-weight:700;
+    padding:.55rem 1rem;
+    border-radius:12px;
+    box-shadow:0 8px 18px rgba(16,185,129,.25);
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    text-decoration:none;
+    font-size:.85rem;
+  }
+  .btn-try:hover{
     transform: translateY(-1px);
-    filter: brightness(1.05);
-    box-shadow: 0 10px 22px rgba(16, 185, 129, 0.32);
+    filter:brightness(1.05);
+    box-shadow:0 10px 22px rgba(16,185,129,.32);
   }
-  .xp-highlight {
-    display: inline-block;
-    margin-top: 8px;
-    font-size: 13px;
-    color: #34d399;
-    font-weight: 600;
+
+  .empty-state{
+    border-radius:16px;
+    padding:16px 18px;
+    background:rgba(15,23,42,.9);
+    border:1px dashed rgba(148,163,184,.6);
+    font-size:.9rem;
+    color:#cbd5f5;
   }
 </style>
 
-<div id="stu-main-content-wrapper">
-  <div class="mb-6">
-    <h1 class="text-3xl font-semibold text-gray-900">
-      Welcome back, {{ current_user.name }}
-    </h1>
-    <p class="text-gray-900 mt-1">
-      Nivel {{ profile.level }} | XP {{ profile.xp }} |  ${{
-      profile.cash_balance }}
-    </p>
-  </div>
+{# datos del “jugador” si existen #}
+{% set prof = profile if profile is defined else None %}
+{% set my_level = prof.level if prof is not none and prof.level is not none else 1 %}
+{% set my_xp = prof.xp if prof is not none and prof.xp is not none else 0 %}
+{# cap sencillo 0–100 para la barra #}
+{% set xp_percent = my_xp if my_xp <= 100 else 100 %}
+{% set total_modules = modules|length if modules is defined and modules is not none else 0 %}
+{% set total_activities = activities|length if activities is defined and activities is not none else 0 %}
 
-  <section class="space-y-3">
-    <h2 class="stu-title text-xl">Módulos disponibles</h2>
-    <div class="mod-grid">
-      {% if modules %} {% for m in modules %}
-      <a
-        href="{{ url_for('student_ui.module_detail', module_id=m.id, tab='activities') }}"
-        class="module-card block no-underline"
-        aria-label="Abrir módulo {{ m.title }}"
-      >
-        <div class="module-title">{{ m.title }}</div>
-        {% if m.summary %}
-        <p class="mt-1 text-sm text-emerald-200/80 line-clamp-2">
-          {{ m.summary }}
-        </p>
-        {% endif %}
-        <div class="mt-2 flex items-center gap-2 text-xs">
-          <span class="module-badge {{ '' if m.is_published else 'is-draft' }}">
-            {{ 'Publicado' if m.is_published else 'Borrador' }}
-          </span>
-          {% if m.level %}<span class="module-badge">Nivel {{ m.level }}</span
-          >{% endif %} {% if m.xp_reward %}<span class="module-badge"
-            >+{{ m.xp_reward }} XP</span
-          >{% endif %}
-          <span class="ml-auto text-emerald-300/90">Abrir →</span>
+<div class="stu-dashboard space-y-8">
+
+  <!-- ===== HUD RPG / PLAYER ===== -->
+  <section class="guard-left">
+    <div class="hud-grid">
+
+      <!-- Panel de jugador -->
+      <div class="card-base player-card">
+        <div class="player-avatar">
+          {{ (current_user.first_name[0] if current_user.is_authenticated and current_user.first_name else 'E')|upper }}
         </div>
-        <div class="module-progress">
-          <div
-            class="progress-fill"
-            style="--progress: {{ m.progress|default('0%') }}"
-          ></div>
+        <div class="player-main">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <div class="player-name">
+                {{ current_user.first_name or 'Estudiante' }}
+              </div>
+              <div class="player-sub">
+                Aventurero económico · Nivel {{ my_level }}
+              </div>
+            </div>
+            <span class="pill-small pill-small-success">
+              ⭐ Nivel {{ my_level }}
+            </span>
+          </div>
+
+          <div class="xp-bar-wrap">
+            <div class="xp-bar-label">
+              <span>XP actual</span>
+              <span>{{ my_xp }} XP</span>
+            </div>
+            <div class="xp-bar">
+              <div class="xp-bar-fill" style="transform:scaleX({{ (xp_percent/100.0) }})"></div>
+            </div>
+          </div>
         </div>
-      </a>
-      {% endfor %} {% else %}
-      <div class="text-emerald-200/70">
-        No tienes módulos asignados aún. Cuando tu profesor publique o asigne
-        módulos, aparecerán aquí.
       </div>
+
+      <!-- Stats: módulos -->
+      <div class="card-base hud-stat">
+        <div class="hud-stat-title">Módulos activos</div>
+        <div class="hud-stat-main">{{ total_modules }}</div>
+        <div class="hud-stat-sub">
+          {{ 'Historia principal y side quests' if total_modules else 'Tu profesor añadirá módulos pronto.' }}
+        </div>
+      </div>
+
+      <!-- Stats: actividades -->
+      <div class="card-base hud-stat">
+        <div class="hud-stat-title">Actividades disponibles</div>
+        <div class="hud-stat-main">{{ total_activities }}</div>
+        <div class="hud-stat-sub">
+          {{ 'Completa actividades para ganar XP y recompensas.' if total_activities else 'Cuando haya actividades podrás verlas aquí.' }}
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== MÓDULOS ===== -->
+  <section class="space-y-3 guard-left">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="stu-title text-xl">Módulos disponibles</h2>
+      {% if total_modules %}
+        <span class="text-xs text-emerald-800">
+          Escoge un módulo para ver su historia y actividades.
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="mod-grid">
+      {% if modules %}
+        {% for m in modules %}
+          <a
+            href="{{ url_for('student_ui.module_detail', module_id=m.id) }}"
+            class="module-card block no-underline cursor-pointer"
+            aria-label="Abrir módulo {{ m.title }}"
+          >
+            <div class="module-title">
+              {{ m.title }}
+            </div>
+
+            {% if m.summary %}
+              <p class="mt-1 text-sm text-emerald-200/80 line-clamp-2">
+                {{ m.summary }}
+              </p>
+            {% endif %}
+
+            <div class="mt-2 flex items-center gap-2 text-xs">
+              <span class="module-badge {{ '' if m.is_published else 'is-draft' }}">
+                {{ 'Publicado' if m.is_published else 'Borrador' }}
+              </span>
+              {% if m.level %}
+                <span class="module-badge">
+                  🛡️ Nivel {{ m.level }}
+                </span>
+              {% endif %}
+              {% if m.xp_reward %}
+                <span class="module-badge">
+                  💠 +{{ m.xp_reward }} XP
+                </span>
+              {% endif %}
+              <span class="ml-auto text-emerald-300/90 flex items-center gap-1">
+                Explorar <span>→</span>
+              </span>
+            </div>
+
+            <div class="module-footer">
+              <span class="module-tag">
+                🧩 {{ m.activities.count() if m.activities is not none else 0 }} actividades
+              </span>
+            </div>
+          </a>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          🎲 Aún no tienes módulos asignados. Cuando tu profesor publique o asigne módulos, aparecerán aquí
+          como nuevas aventuras.
+        </div>
       {% endif %}
     </div>
   </section>
 
-  <section class="space-y-3">
-    <h2 class="stu-title text-xl">Actividades</h2>
+  <!-- ===== ACTIVIDADES ===== -->
+  <section class="space-y-3 guard-left">
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="stu-title text-xl">Actividades rápidas</h2>
+      {% if total_activities %}
+        <span class="text-xs text-emerald-800">
+          Elige una actividad para ganar XP y mejorar tu perfil financiero.
+        </span>
+      {% endif %}
+    </div>
+
     {% if activities %}
-    <div class="act-grid">
-      {% for a in activities %}
-      <div class="activity-card">
-        <div class="activity-meta">
-          {{ a.module.title if a.module else 'Módulo' }} · {{ a.type or 'text'
-          }} · Max {{ a.max_points or 0 }} pts
-        </div>
-        <div class="text-emerald-100 font-semibold">{{ a.title }}</div>
-        <span class="xp-highlight">+{{ a.xp_reward or 0 }} XP</span>
-        <a
-          class="btn-try"
-          href="{{ url_for('student_ui.play_activity', activity_id=a.id) }}"
-          >Play</a
-        >
+      <div class="act-grid">
+        {% for a in activities %}
+          <div class="activity-card">
+            <div class="activity-meta">
+              {{ a.module.title if a.module else 'Módulo' }}
+              · {{ a.type or 'texto' }}
+              · Máx {{ a.max_points or 0 }} pts
+            </div>
+            <div class="activity-title">
+              {{ a.title }}
+            </div>
+
+            <div class="activity-tag-row">
+              <span>🏅 XP base: {{ a.default_xp or a.max_points or 25 }}</span>
+              {% if a.position is not none %}
+                <span>Orden: {{ a.position }}</span>
+              {% endif %}
+            </div>
+
+            <a class="btn-try" href="{{ url_for('student_ui.play_activity', activity_id=a.id) }}">
+              ▶ Jugar misión
+            </a>
+          </div>
+        {% endfor %}
       </div>
-      {% endfor %}
-    </div>
     {% else %}
-    <div class="text-emerald-200/70">
-      Aún no hay actividades publicadas para tus módulos.
-    </div>
+      <div class="empty-state">
+        ⚔️ Todavía no hay misiones publicadas. En cuanto tu profesor active actividades,
+        podrás completarlas aquí para ganar XP, dinero virtual y mejorar tu puntuación de crédito.
+      </div>
     {% endif %}
   </section>
 </div>
-{% endblock %} {% block scripts %} {{ super() }} {% endblock %}
+{% endblock %}
