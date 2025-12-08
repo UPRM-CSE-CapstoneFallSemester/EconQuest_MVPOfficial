@@ -24,7 +24,6 @@
     <form method="post" action="{{ url_for('auth.login') }}" class="mt-6 space-y-4">
       {{ form.hidden_tag() }} <!-- CSRF -->
 
-      <!-- 👇 Bloque de errores del form y mensajes flash -->
       {% if form.errors %}
         {% for field, errors in form.errors.items() %}
           {% for e in errors %}
@@ -40,7 +39,6 @@
           {% endfor %}
         {% endif %}
       {% endwith %}
-      <!-- ☝️ Hasta aquí el bloque insertado -->
 
       <label class="block text-sm text-slate-700">Email
         <input name="email" type="email"
