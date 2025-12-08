@@ -156,24 +156,8 @@
         <div class="v">$ {{ profile.cash_balance }}</div>
       </li>
       <li>
-        <div class="k">💼 <span>Salario</span></div>
-        <div class="v">$ {{ profile.salary_monthly }} / mes</div>
-      </li>
-      <li>
-        <div class="k">📈 <span>Ingreso diario</span></div>
-        <div class="v">$ {{ (profile.salary_monthly/30)|round(0) }}</div>
-      </li>
-      <li>
-        <div class="k">🚗 <span>Carro</span></div>
-        <div class="v">Si : $ {{ profile.car_payment_monthly }}/mes</div>
-      </li>
-      <li>
         <div class="k">⭐ <span>Nivel</span></div>
         <div class="v">{{ profile.level }}</div>
-      </li>
-      <li>
-        <div class="k">🔋 <span>Energía</span></div>
-        <div class="v">{{ profile.energy }}</div>
       </li>
     </ul>
 

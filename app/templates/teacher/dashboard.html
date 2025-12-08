@@ -82,13 +82,13 @@
               {# Ver lista de actividades del módulo #}
               <a href="{{ url_for('teacher.activities_for_module', module_id=m.id) }}"
                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-600/70 text-xs hover:bg-slate-800">
-                🧩 Ver actividades
+                 Ver actividades
               </a>
 
               {# Editar módulo en el nuevo UI #}
               <a href="{{ url_for('teacher.module_edit', module_id=m.id) }}"
                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-700/80 border border-emerald-500/70 text-xs hover:bg-emerald-600">
-                ✏ Editar módulo
+                 Editar módulo
               </a>
 
               {# Eliminar módulo #}
@@ -98,7 +98,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-rose-700/80 border border-rose-500/70 text-xs text-white hover:bg-rose-600">
-                  🗑 Eliminar
+                   Eliminar
                 </button>
               </form>
             </div>
@@ -165,12 +165,42 @@
 
             <form method="post" action="{{ url_for('teacher.activity_update', activity_id=a.id) }}" class="mt-2 grid md:grid-cols-2 gap-2 text-xs">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="title" value="{{ a.title }}">
-              <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="type" value="{{ a.type }}">
-              <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="max_points" value="{{ a.max_points or '' }}">
-              <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="position" value="{{ a.position or '' }}">
-              <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="attempt_limit" value="{{ a.attempt_limit or '' }}" placeholder="Attempt limit">
-              <input class="px-3 py-2 rounded bg-slate-900 border border-slate-700" name="default_xp" value="{{ a.default_xp or '' }}" placeholder="Default XP">
+              <input
+  class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+  name="title"
+  value="{{ a.title }}"
+  placeholder="Título de la actividad">
+
+<input
+  class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+  name="type"
+  value="{{ a.type }}"
+  placeholder="Tipo (quiz, scenario o text)">
+
+<input
+  class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+  name="max_points"
+  value="{{ a.max_points or '' }}"
+  placeholder="Puntos máx. (ej. 100)">
+
+<input
+  class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+  name="position"
+  value="{{ a.position or '' }}"
+  placeholder="Orden de la actividad (ej. 1)">
+
+<input
+  class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+  name="attempt_limit"
+  value="{{ a.attempt_limit or '' }}"
+  placeholder="Intentos permitidos (ej. 3)">
+
+<input
+  class="px-3 py-2 rounded bg-slate-900 border border-slate-700"
+  name="default_xp"
+  value="{{ a.default_xp or '' }}"
+  placeholder="XP base (ej. 25)">
+
               <label class="text-sm flex items-center gap-2">
                 <input type="checkbox" name="is_published" {{ 'checked' if a.is_published else '' }}> Publicada
               </label>
