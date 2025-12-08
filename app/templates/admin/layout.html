@@ -155,17 +155,11 @@
           <span class="icon">🟢</span
           ><span class="nav-label">Live Sessions</span>
         </a>
-        <a
-          class="nav-item {{ 'active' if request.endpoint=='admin.settings_view' else '' }}"
-          data-title="Settings"
-          href="{{ url_for('admin.settings_view') }}"
-        >
-          <span class="icon">⚙️</span><span class="nav-label">Settings</span>
-        </a>
+
       </nav>
 
       <div class="mt-6 text-xs text-slate-400 brand-label">
-        Más tarde: ⚙️ Settings, 📊 Reports, 🔔 Alerts
+        Más tarde: Settings, Reports, Alerts
       </div>
     </div>
 
