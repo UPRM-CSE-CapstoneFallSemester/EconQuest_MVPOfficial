@@ -30,30 +30,13 @@
   <div>
     <h1 class="text-2xl font-bold">Panel de administración</h1>
     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-      Monitorea la salud de EconQuest, gestiona usuarios y ajusta el sistema de XP.
+      Monitorea la plataforma de EconQuest, gestiona usuarios y ajustar el sistema.
     </p>
   </div>
 
 </div>
 
-{# ===== KPIs: salud de plataforma ===== #}
 <div class="grid md:grid-cols-3 gap-4 mb-6">
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
-    <div class="admin-kpi-label text-slate-500">Disponibilidad (última hora)</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">
-      {{ "%.1f%%"|format(stats.availability_pct) }}
-    </div>
-    <div class="text-xs text-slate-500 mt-2">Respuestas con código &lt; 500</div>
-  </div>
-
-  <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
-    <div class="admin-kpi-label text-slate-500">p95 /student/dashboard</div>
-    <div class="text-2xl font-semibold text-emerald-500 mt-1">
-      {{ stats.p95_ms }} ms
-    </div>
-    <div class="text-xs text-slate-500 mt-2">Última hora</div>
-  </div>
-
   <div class="bg-white dark:bg-slate-900 dark:text-slate-100 p-5 rounded-2xl admin-kpi-card">
     <div class="admin-kpi-label text-slate-500">Usuarios</div>
     <div class="text-2xl font-semibold text-emerald-500 mt-1">
@@ -95,7 +78,7 @@
       class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
       href="{{ url_for('admin.users_view') }}"
     >
-      <span class="font-semibold">👥 Users & Roles</span>
+      <span class="font-semibold"> Users & Roles</span>
       <span class="text-slate-500 dark:text-slate-400">
         Cambia rápidamente permisos de docentes y estudiantes.
       </span>
@@ -105,33 +88,22 @@
       class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
       href="{{ url_for('admin.data_home') }}"
     >
-      <span class="font-semibold">📊 Data Browser</span>
+      <span class="font-semibold"> Data Browser</span>
       <span class="text-slate-500 dark:text-slate-400">
         Explora tablas (módulos, actividades, intentos, grupos…).
       </span>
     </a>
 
-    {# OJO: si tu endpoint se llama distinto, cambia 'live_sessions' por el que uses. #}
     <a
       class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
       href="{{ url_for('admin.api_active_sessions') }}"
     >
-      <span class="font-semibold">🟢 Sesiones en vivo</span>
+      <span class="font-semibold"> Sesiones en vivo</span>
       <span class="text-slate-500 dark:text-slate-400">
         Ver quién está conectado ahora mismo y desde dónde.
       </span>
     </a>
 
-    {# OJO: igual aquí, ajusta el endpoint si tu ruta de settings tiene otro nombre. #}
-    <a
-      class="admin-quick-link border border-slate-200 dark:border-slate-800 hover:border-emerald-500"
-      href="{{ url_for('admin.settings_view') }}"
-    >
-      <span class="font-semibold">🎮 Game / XP Settings</span>
-      <span class="text-slate-500 dark:text-slate-400">
-        Ajusta curva de XP y límite de intentos por actividad.
-      </span>
-    </a>
   </div>
 </section>
 

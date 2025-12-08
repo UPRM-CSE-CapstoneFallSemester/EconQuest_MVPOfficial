@@ -475,12 +475,8 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="text-xs">Crédito <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="credit_score" value="{{ (p.credit_score if p else 650) }}"></label>
             <label class="text-xs">Cash $ <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="cash_balance" value="{{ (p.cash_balance if p else 500) }}"></label>
-            <label class="text-xs">Salario $/mes <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="salary_monthly" value="{{ (p.salary_monthly if p else 1200) }}"></label>
-            <label class="text-xs flex items-center gap-2 mt-5"><input type="checkbox" name="has_car" {{ 'checked' if p and p.has_car else '' }}> Tiene carro</label>
-            <label class="text-xs">Pago carro $/mes <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="car_payment_monthly" value="{{ (p.car_payment_monthly if p else 0) }}"></label>
             <label class="text-xs">Nivel <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="level" value="{{ (p.level if p else 1) }}"></label>
             <label class="text-xs">XP <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="xp" value="{{ (p.xp if p else 0) }}"></label>
-            <label class="text-xs">Energía <input class="w-full mt-1 px-2 py-1 rounded bg-slate-900 border border-slate-700" name="energy" value="{{ (p.energy if p else 100) }}"></label>
             <div class="col-span-2 mt-2"><button class="px-3 py-2 rounded bg-emerald-600 text-white text-sm">Guardar</button></div>
           </form>
 
